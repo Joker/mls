@@ -1,6 +1,6 @@
 use std::usize;
 
-use crate::termsize::terminal_size;
+use crate::{termsize::terminal_size, File};
 
 fn width_sizes(names: &Vec<usize>, stack_size: &usize) -> (usize, Vec<usize>) {
 	let mut out = Vec::new();
@@ -46,26 +46,27 @@ fn spaces(width: usize) -> String {
 	(0..width).into_iter().map(|_| ' ').collect()
 }
 
-pub fn grid(names: &Vec<String>) -> String {
+pub fn grid(files: &Vec<File>, indent: usize) -> String {
 	let mut name_len = Vec::new();
-	for name in names {
-		name_len.push(name.len() + 2);
+	for file in files {
+		name_len.push(file.name.len() + indent);
 	}
-	let (stack, columns) = size(&name_len);
+
+	let (stack, column_sizes) = size(&name_len);
 
 	let mut str_vec: Vec<String> = Vec::new();
 	for _ in 0..stack {
 		str_vec.push("".to_string());
 	}
 
-	for (i, nm) in names.iter().enumerate() {
+	for (i, nm) in files.iter().enumerate() {
 		let j = i % stack;
 		let k = i / stack;
 
-		str_vec[j] += nm;
+		str_vec[j] += &nm.name;
 
-		if name_len[i] <= columns[k] {
-			str_vec[j] += &spaces(columns[k] - name_len[i] + 2);
+		if column_sizes[k] >= name_len[i] {
+			str_vec[j] += &spaces(column_sizes[k] - name_len[i] + indent);
 		}
 	}
 
