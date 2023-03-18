@@ -1,8 +1,10 @@
+// use std::env;
 use std::fs;
 use std::path::Path;
 
-use termsize::terminal_size;
+use crate::display::grid;
 
+mod display;
 mod termsize;
 
 fn filename(path: &Path) -> String {
@@ -14,11 +16,12 @@ fn filename(path: &Path) -> String {
 }
 
 fn main() {
-	let files = fs::read_dir(".").unwrap();
+	// let args: Vec<String> = env::args().collect();
+	let files = fs::read_dir("..").unwrap();
 
-	for file in files {
-		println!("{}", filename(&file.unwrap().path()))
-	}
+	let file_names = files
+		.map(|x| filename(&x.unwrap().path()))
+		.collect::<Vec<String>>();
 
-	println!("{:?}", terminal_size())
+	println!("{}", grid(&file_names));
 }
