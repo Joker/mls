@@ -49,7 +49,7 @@ fn spaces(width: usize) -> String {
 pub fn grid(files: &Vec<File>, indent: usize) -> String {
 	let mut name_len = Vec::new();
 	for file in files {
-		name_len.push(file.name.len() + indent);
+		name_len.push(file.name.chars().count() + indent);
 	}
 
 	let (stack, column_sizes) = size(&name_len);

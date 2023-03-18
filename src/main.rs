@@ -9,17 +9,15 @@ mod display;
 mod termsize;
 
 fn filename(path: &Path) -> String {
-	if let Some(name) = path.file_name() {
-		name.to_string_lossy().to_string()
-	} else {
-		path.display().to_string()
+	match path.file_name() {
+		Some(name) => name.to_string_lossy().to_string(),
+		_ => path.display().to_string(),
 	}
 }
-fn ext(fname: String) -> Option<String> {
-	let e = fname.split(".").collect::<Vec<_>>();
-	match e.len() {
-		0 | 1 => None,
-		n => Some(e[n - 1].to_string()),
+fn ext(path: &Path) -> String {
+	match path.extension() {
+		Some(ext) => ext.to_string_lossy().to_string(),
+		_ => "".to_string(),
 	}
 }
 
@@ -27,7 +25,7 @@ fn ext(fname: String) -> Option<String> {
 pub struct File {
 	pub path: PathBuf,
 	pub name: String,
-	pub ext: Option<String>,
+	pub ext: String,
 	pub dir: bool,
 	pub dot: bool,
 }
@@ -43,20 +41,21 @@ fn main() {
 	let mut file_names = list
 		.map(|x| {
 			let path = &x.unwrap().path();
-			let md = std::fs::symlink_metadata(path).unwrap();
+			let md = path.metadata().unwrap();
 			let fname = filename(path);
 			let dot = fname.chars().next().unwrap() == '.';
 
 			File {
 				path: path.to_path_buf(),
 				name: fname.clone(),
-				ext: if dot { None } else { ext(fname) },
+				ext: ext(path),
 				dir: md.is_dir(),
 				dot: dot,
 			}
 		})
 		.collect::<Vec<File>>();
 
-	file_names.sort_by_key(|f| (Reverse(f.dir), f.name.clone()));
+	file_names.sort_by_key(|f| (Reverse(f.dir), f.ext.clone(), f.name.clone()));
 	println!("{}", grid(&file_names, 3));
+	println!("{:?}", file_names);
 }
