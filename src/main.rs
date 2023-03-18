@@ -1,9 +1,10 @@
-// use std::env;
 use std::cmp::Reverse;
 use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::display::grid;
+
+use arguably::ArgParser;
 
 mod display;
 mod termsize;
@@ -31,36 +32,59 @@ pub struct File {
 }
 
 fn main() {
-	// let args: Vec<String> = env::args().collect();
-	let list = fs::read_dir("../..").unwrap();
+	let mut parser = ArgParser::new()
+		.helptext("Usage: mls")
+		.version("1.0")
+		.flag("a")
+		.flag("l");
+	if let Err(err) = parser.parse() {
+		err.exit();
+	}
+	if parser.found("l") {
+		println!("Flag -l found.");
+	}
+	let dir = if parser.args.len() > 0 {
+		parser.args[0].clone()
+	} else {
+		".".to_string()
+	};
 
-	let flag = true;
+	//
 
-	let mut file_names = list
-		.filter_map(|x| {
-			let path = &x.unwrap().path();
-			let fname = filename(path);
-			let dot = fname.chars().next().unwrap() == '.';
-			let md = path.metadata().unwrap();
+	let hide = if parser.found("a") { true } else { false };
 
-			if dot && flag || !dot {
-				return Some(File {
-					path: path.to_path_buf(),
-					name: fname.clone(),
-					ext: ext(path),
-					dir: md.is_dir(),
-					dot: dot,
-				});
-			} else {
-				return None;
-			}
-		})
-		.collect::<Vec<File>>();
+	let mut file_names = match fs::read_dir(dir) {
+		Ok(list) => list
+			.filter_map(|x| {
+				let path = &x.unwrap().path();
+				let fname = filename(path);
+				let dot = fname.chars().next().unwrap() == '.';
+				let md = std::fs::symlink_metadata(path).unwrap();
 
+				if dot && hide || !dot {
+					return Some(File {
+						path: path.to_path_buf(),
+						name: fname.clone(),
+						ext: ext(path),
+						dir: md.is_dir(),
+						dot: dot,
+					});
+				} else {
+					return None;
+				}
+			})
+			.collect::<Vec<File>>(),
+
+		Err(e) => {
+			println!("{}", e);
+			return;
+		}
+	};
 	if file_names.len() == 0 {
 		println!(".   ..");
 		return;
 	}
+
 	file_names.sort_by_key(|f| (Reverse(f.dir), f.ext.clone(), f.name.clone()));
 	println!("{}", grid(&file_names, 3));
 }
