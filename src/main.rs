@@ -34,11 +34,7 @@ fn main() {
 	// let args: Vec<String> = env::args().collect();
 	let list = fs::read_dir("../..").unwrap();
 
-	// let mut file_names = list
-	// 	.map(|x| filename(&x.unwrap().path()))
-	// 	.collect::<Vec<String>>();
-
-	let flag = false;
+	let flag = true;
 
 	let mut file_names = list
 		.filter_map(|x| {
@@ -61,7 +57,10 @@ fn main() {
 		})
 		.collect::<Vec<File>>();
 
+	if file_names.len() == 0 {
+		println!(".   ..");
+		return;
+	}
 	file_names.sort_by_key(|f| (Reverse(f.dir), f.ext.clone(), f.name.clone()));
 	println!("{}", grid(&file_names, 3));
-	// println!("{:?}", file_names);
 }

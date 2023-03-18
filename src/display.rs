@@ -23,7 +23,7 @@ fn width_sizes(names: &Vec<usize>, stack_size: &usize) -> (usize, Vec<usize>) {
 	(out.iter().sum::<usize>(), out)
 }
 
-fn size(names: &Vec<usize>) -> (usize, Vec<usize>) {
+fn grid_size(names: &Vec<usize>) -> (usize, Vec<usize>) {
 	let (mw, _) = terminal_size().unwrap();
 	let term_width = mw as usize;
 
@@ -52,7 +52,15 @@ pub fn grid(files: &Vec<File>, indent: usize) -> String {
 		name_len.push(file.name.chars().count() + indent);
 	}
 
-	let (stack, column_sizes) = size(&name_len);
+	let (stack, column_sizes) = grid_size(&name_len);
+
+	if stack == 1 {
+		return files
+			.iter()
+			.map(|x| x.name.clone())
+			.collect::<Vec<String>>()
+			.join(&spaces(indent));
+	}
 
 	let mut str_vec: Vec<String> = Vec::new();
 	for _ in 0..stack {
