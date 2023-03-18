@@ -38,24 +38,30 @@ fn main() {
 	// 	.map(|x| filename(&x.unwrap().path()))
 	// 	.collect::<Vec<String>>();
 
+	let flag = false;
+
 	let mut file_names = list
-		.map(|x| {
+		.filter_map(|x| {
 			let path = &x.unwrap().path();
-			let md = path.metadata().unwrap();
 			let fname = filename(path);
 			let dot = fname.chars().next().unwrap() == '.';
+			let md = path.metadata().unwrap();
 
-			File {
-				path: path.to_path_buf(),
-				name: fname.clone(),
-				ext: ext(path),
-				dir: md.is_dir(),
-				dot: dot,
+			if dot && flag || !dot {
+				return Some(File {
+					path: path.to_path_buf(),
+					name: fname.clone(),
+					ext: ext(path),
+					dir: md.is_dir(),
+					dot: dot,
+				});
+			} else {
+				return None;
 			}
 		})
 		.collect::<Vec<File>>();
 
 	file_names.sort_by_key(|f| (Reverse(f.dir), f.ext.clone(), f.name.clone()));
 	println!("{}", grid(&file_names, 3));
-	println!("{:?}", file_names);
+	// println!("{:?}", file_names);
 }
