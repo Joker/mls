@@ -5,7 +5,6 @@ mod termsize;
 use std::cmp::Reverse;
 use std::fs;
 
-use crate::display::grid;
 use crate::info::{file_info, File};
 
 use arguably::ArgParser;
@@ -27,12 +26,13 @@ fn main() {
 	} else {
 		".".to_string()
 	};
+	let a = parser.found("a");
 
 	//
 
 	let mut file_list = match fs::read_dir(dir) {
 		Ok(list) => list
-			.filter_map(|x| file_info(&x.unwrap().path(), parser.found("a")))
+			.filter_map(|x| file_info(&x.unwrap().path(), a))
 			.collect::<Vec<File>>(),
 		Err(e) => {
 			println!("{}", e);
@@ -45,5 +45,5 @@ fn main() {
 	}
 	file_list.sort_by_key(|f| (Reverse(f.dir), f.ext.clone(), f.name.clone()));
 
-	println!("{}", grid(&file_list));
+	println!("{}", display::grid::to_string(&file_list)); 
 }
