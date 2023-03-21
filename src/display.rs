@@ -2,6 +2,8 @@ use std::usize;
 
 use crate::{termsize::terminal_size, File};
 
+pub const INDENT: usize = 3;
+
 fn width_sizes(names: &Vec<usize>, stack_size: &usize) -> (usize, Vec<usize>) {
 	let mut out = Vec::new();
 	let mut count = 0;
@@ -46,10 +48,10 @@ fn spaces(width: usize) -> String {
 	(0..width).into_iter().map(|_| ' ').collect()
 }
 
-pub fn grid(files: &Vec<File>, indent: usize) -> String {
+pub fn grid(files: &Vec<File>) -> String {
 	let mut name_len = Vec::new();
 	for file in files {
-		name_len.push(file.name.chars().count() + indent);
+		name_len.push(file.name.chars().count() + INDENT);
 	}
 
 	let (stack, column_sizes) = grid_size(&name_len);
@@ -59,22 +61,20 @@ pub fn grid(files: &Vec<File>, indent: usize) -> String {
 			.iter()
 			.map(|x| x.name.clone())
 			.collect::<Vec<String>>()
-			.join(&spaces(indent));
+			.join(&spaces(INDENT));
 	}
 
-	let mut str_vec: Vec<String> = Vec::new();
-	for _ in 0..stack {
-		str_vec.push("".to_string());
-	}
+	let mut str_vec: Vec<String> = Vec::with_capacity(stack);
+	str_vec.resize(stack, String::from(""));
 
 	for (i, nm) in files.iter().enumerate() {
 		let j = i % stack;
 		let k = i / stack;
 
-		str_vec[j] += &nm.name;
+		str_vec[j].push_str(&nm.name);
 
 		if column_sizes[k] >= name_len[i] {
-			str_vec[j] += &spaces(column_sizes[k] - name_len[i] + indent);
+			str_vec[j].push_str(&spaces(column_sizes[k] - name_len[i] + INDENT));
 		}
 	}
 

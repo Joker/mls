@@ -10,8 +10,6 @@ use crate::info::{file_info, File};
 
 use arguably::ArgParser;
 
-pub const INDENT: usize = 3;
-
 fn main() {
 	let mut parser = ArgParser::new()
 		.helptext("Usage: mls")
@@ -32,7 +30,7 @@ fn main() {
 
 	//
 
-	let mut file_names = match fs::read_dir(dir) {
+	let mut file_list = match fs::read_dir(dir) {
 		Ok(list) => list
 			.filter_map(|x| file_info(&x.unwrap().path(), parser.found("a")))
 			.collect::<Vec<File>>(),
@@ -41,11 +39,11 @@ fn main() {
 			return;
 		}
 	};
-	if file_names.len() == 0 {
+	if file_list.len() == 0 {
 		println!(".   ..");
 		return;
 	}
-	file_names.sort_by_key(|f| (Reverse(f.dir), f.ext.clone(), f.name.clone()));
+	file_list.sort_by_key(|f| (Reverse(f.dir), f.ext.clone(), f.name.clone()));
 
-	println!("{}", grid(&file_names, INDENT));
+	println!("{}", grid(&file_list));
 }

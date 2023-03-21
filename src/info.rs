@@ -2,7 +2,8 @@ use std::os::unix::prelude::PermissionsExt;
 use std::path::{Path, PathBuf};
 
 use libc::S_IXUSR;
-use crate::INDENT;
+
+use crate::display::INDENT;
 
 #[derive(Clone, Debug)]
 pub struct File {
@@ -15,6 +16,8 @@ pub struct File {
 	pub lnk: bool,
 	pub rwx: u32,
 }
+
+
 
 fn filename(path: &Path) -> String {
 	match path.file_name() {
@@ -36,7 +39,7 @@ pub fn file_info(path: &PathBuf, hide: bool) -> Option<File> {
 
 	let dot = fname.chars().next().unwrap() == '.';
 	let rwx = md.permissions().mode();
-	println!("permissions: {:o} {}", rwx, fname);
+	// println!("permissions: {:o} {}", rwx, fname);
 
 	if dot && hide || !dot {
 		return Some(File {
