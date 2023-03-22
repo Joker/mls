@@ -1,6 +1,7 @@
 mod display;
 mod info;
 mod termsize;
+mod color;
 
 use std::cmp::Reverse;
 use std::fs;

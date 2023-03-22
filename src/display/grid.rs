@@ -30,16 +30,28 @@ fn grid_size(names: &Vec<File>) -> (usize, Vec<usize>) {
 
 	let mut stack =
 		names.len() / (term_width / names.iter().map(|f| f.len).max().unwrap_or(term_width / 2));
-	let mut column_vec = Vec::new();
 
-	loop {
-		let (sum, col_sizes) = width_sizes(names, &stack);
-
-		if term_width >= sum && stack != 0 {
-			column_vec = col_sizes;
+	let (mut width, mut col_sizes) = width_sizes(names, &stack);
+	if term_width < width {
+		loop {
+			stack += 1;
+			(width, col_sizes) = width_sizes(names, &stack);
+			if term_width >= width {
+				return (stack, col_sizes);
+			}
+		}
+	} else {
+		let mut column_out = col_sizes;
+		loop {
 			stack -= 1;
-		} else {
-			return (stack + 1, column_vec);
+			(width, col_sizes) = width_sizes(names, &stack);
+			if term_width == width {
+				return (stack, col_sizes);
+			}
+			if term_width < width {
+				return (stack + 1, column_out);
+			}
+			column_out = col_sizes;
 		}
 	}
 }
