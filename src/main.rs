@@ -1,7 +1,7 @@
+mod color;
 mod display;
 mod info;
 mod termsize;
-mod color;
 
 use std::cmp::Reverse;
 use std::fs;
@@ -23,9 +23,9 @@ fn main() {
 		println!("Flag -l found.");
 	}
 	let dir = if parser.args.len() > 0 {
-		parser.args[0].clone()
+		parser.args[0].as_str()
 	} else {
-		".".to_string()
+		"."
 	};
 	let a = parser.found("a");
 
@@ -46,5 +46,5 @@ fn main() {
 	}
 	file_list.sort_by_key(|f| (Reverse(f.dir), f.ext.clone(), f.name.clone()));
 
-	println!("{}", display::grid::to_string(&file_list)); 
+	println!("{}", display::grid::to_string(&file_list));
 }

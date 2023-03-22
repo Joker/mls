@@ -35,10 +35,10 @@ struct TermSize {
 	y: c_ushort,
 }
 
-pub fn terminal_size() -> io::Result<(u16, u16)> {
+pub fn terminal_size() -> io::Result<(usize, usize)> {
 	unsafe {
 		let mut size: TermSize = mem::zeroed();
 		cvt(ioctl(STDOUT_FILENO, TIOCGWINSZ.into(), &mut size as *mut _))?;
-		Ok((size.col as u16, size.row as u16))
+		Ok((size.col as usize, size.row as usize))
 	}
 }

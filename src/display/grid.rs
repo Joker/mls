@@ -3,13 +3,13 @@ use std::usize;
 use super::{spaces, INDENT};
 use crate::{termsize::terminal_size, File};
 
-fn width_sizes(names: &Vec<File>, stack_size: &usize) -> (usize, Vec<usize>) {
+fn width_sizes(names: &Vec<File>, stack_size: usize) -> (usize, Vec<usize>) {
 	let mut col_sizes = Vec::new();
 	let mut count = 0;
 	let mut maximum = 0;
 
 	for n in names {
-		if count == *stack_size {
+		if count == stack_size {
 			col_sizes.push(maximum);
 			maximum = 0;
 			count = 0;
@@ -25,17 +25,20 @@ fn width_sizes(names: &Vec<File>, stack_size: &usize) -> (usize, Vec<usize>) {
 }
 
 fn grid_size(names: &Vec<File>) -> (usize, Vec<usize>) {
-	let (mw, _) = terminal_size().unwrap();
-	let term_width = mw as usize;
+	let (term_width, _) = terminal_size().unwrap();
 
 	let mut stack =
 		names.len() / (term_width / names.iter().map(|f| f.len).max().unwrap_or(term_width / 2));
 
-	let (mut width, mut col_sizes) = width_sizes(names, &stack);
+	if stack < 2 && names.iter().fold(0, |acc, e| acc + e.len) <= term_width {
+		return (1, Vec::new());
+	}
+
+	let (mut width, mut col_sizes) = width_sizes(names, stack);
 	if term_width < width {
 		loop {
 			stack += 1;
-			(width, col_sizes) = width_sizes(names, &stack);
+			(width, col_sizes) = width_sizes(names, stack);
 			if term_width >= width {
 				return (stack, col_sizes);
 			}
@@ -44,7 +47,7 @@ fn grid_size(names: &Vec<File>) -> (usize, Vec<usize>) {
 		let mut column_out = col_sizes;
 		loop {
 			stack -= 1;
-			(width, col_sizes) = width_sizes(names, &stack);
+			(width, col_sizes) = width_sizes(names, stack);
 			if term_width == width {
 				return (stack, col_sizes);
 			}
@@ -62,8 +65,8 @@ pub fn to_string(files: &Vec<File>) -> String {
 	if stack == 1 {
 		return files
 			.iter()
-			.map(|x| x.name.clone())
-			.collect::<Vec<String>>()
+			.map(|x| x.name.as_str())
+			.collect::<Vec<_>>()
 			.join(&spaces(INDENT));
 	}
 

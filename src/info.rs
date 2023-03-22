@@ -45,7 +45,7 @@ fn ext_group(ext: String) -> (String, u8) {
 		"html" | "css" | "scss" | "sass" | "js" | "jsx" | "ts" | "tsx" | "go" | "rs" | "java" => {
 			(format!("4a_{ext}"), 4)
 		}
-		"txt" | "md" | "csv" | "yaml" => (format!("4b_{ext}"), 4),
+		"json" | "txt" | "md" | "csv" | "yaml" => (format!("4b_{ext}"), 4),
 
 		"avi" | "flv" | "m2v" | "m4v" | "mkv" | "mov" | "mp4" | "mpeg" | "mpg" | "ogm" | "ogv"
 		| "vob" | "wmv" | "webm" => (format!("5a_{ext}"), 5),
