@@ -1,4 +1,4 @@
-use std::os::unix::prelude::PermissionsExt;
+use std::os::unix::prelude::{MetadataExt, PermissionsExt};
 use std::path::{Path, PathBuf};
 
 use libc::S_IXUSR;
@@ -12,6 +12,7 @@ pub struct File {
 	pub ext: String,
 	pub len: usize,
 	pub dir: bool,
+	pub size: u64,
 	// pub dot: bool,
 	// pub exe: bool,
 	// pub lnk: bool,
@@ -47,17 +48,17 @@ fn ext_group(ext: String) -> (String, u8) {
 		}
 		"json" | "txt" | "md" | "csv" | "yaml" => (format!("4b_{ext}"), 4),
 
-		"avi" | "flv" | "m2v" | "m4v" | "mkv" | "mov" | "mp4" | "mpeg" | "mpg" | "ogm" | "ogv"
-		| "vob" | "wmv" | "webm" => (format!("5a_{ext}"), 5),
-		"aac" | "m4a" | "mka" | "mp3" | "ogg" | "opus" | "wma" => (format!("5b_{ext}"), 6),
-		"alac" | "ape" | "flac" | "wav" => (format!("5c_{ext}"), 7),
+		"avi" | "flv" | "mkv" | "mov" | "mp4" | "mpeg" | "mpg" | "vob" | "wmv" | "webm" => {
+			(format!("5a_{ext}"), 5)
+		}
+		"aac" | "mp3" | "ogg" | "opus" | "wma" | "flac" | "wav" => (format!("5b_{ext}"), 6),
 
 		"tmp" | "swp" | "swo" | "swn" | "bak" | "bkp" | "bk" | "parts" => (format!("zzz_{ext}"), 9),
 		_ => (ext, 0),
 	}
 }
 
-pub fn file_info(path: &PathBuf, hide: bool) -> Option<File> {
+pub fn file_info(path: &PathBuf, hide: bool, long: bool) -> Option<File> {
 	let fname = filename(path);
 	let md = std::fs::symlink_metadata(path).unwrap();
 
@@ -66,10 +67,9 @@ pub fn file_info(path: &PathBuf, hide: bool) -> Option<File> {
 	let lnk = md.is_symlink();
 	let exe = rwx & S_IXUSR as u32 == S_IXUSR as u32;
 
-	let mut len = fname.chars().count() + INDENT;
-	if lnk {
-		len += 1
-	}
+	let len = fname.chars().count() + INDENT;
+	// if lnk { len += 1 }
+
 	let (ext, egrp) = ext_group(ext(path));
 	let dir = md.is_dir();
 	let name = colorise(&fname, &ext, dir, exe, egrp, lnk);
@@ -77,6 +77,7 @@ pub fn file_info(path: &PathBuf, hide: bool) -> Option<File> {
 	if dot && hide || !dot {
 		return Some(File {
 			name,
+			size: if long && !dir { md.size() } else { 0 },
 			ext,
 			len,
 			dir,

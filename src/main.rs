@@ -19,21 +19,19 @@ fn main() {
 	if let Err(err) = parser.parse() {
 		err.exit();
 	}
-	if parser.found("l") {
-		println!("Flag -l found.");
-	}
 	let dir = if parser.args.len() > 0 {
 		parser.args[0].as_str()
 	} else {
 		"."
 	};
+	let l = parser.found("l");
 	let a = parser.found("a");
 
 	//
 
 	let mut file_list = match fs::read_dir(dir) {
 		Ok(list) => list
-			.filter_map(|x| file_info(&x.unwrap().path(), a))
+			.filter_map(|x| file_info(&x.unwrap().path(), a, l))
 			.collect::<Vec<File>>(),
 		Err(e) => {
 			println!("{}", e);
@@ -45,6 +43,9 @@ fn main() {
 		return;
 	}
 	file_list.sort_by_key(|f| (Reverse(f.dir), f.ext.clone(), f.name.clone()));
-
+	if l {
+		println!("{}", display::list::to_string(&file_list));
+		return;
+	}
 	println!("{}", display::grid::to_string(&file_list));
 }
