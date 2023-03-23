@@ -1,7 +1,7 @@
 use std::usize;
 
 use super::{spaces, INDENT};
-use crate::{termsize::terminal_size, File};
+use crate::{unsafelibc::terminal_size, File};
 
 fn width_sizes(names: &Vec<File>, stack_size: usize) -> (usize, Vec<usize>) {
 	let mut col_sizes = Vec::new();

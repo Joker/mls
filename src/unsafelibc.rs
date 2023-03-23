@@ -1,6 +1,7 @@
 // from https://github.com/redox-os/termion
 
 use libc::{c_ushort, ioctl, STDOUT_FILENO, TIOCGWINSZ};
+use std::ffi::CStr;
 use std::{io, mem};
 
 // Support functions for converting libc return values to io errors {
@@ -41,4 +42,27 @@ pub fn terminal_size() -> io::Result<(usize, usize)> {
 		cvt(ioctl(STDOUT_FILENO, TIOCGWINSZ.into(), &mut size as *mut _))?;
 		Ok((size.col as usize, size.row as usize))
 	}
+}
+
+pub fn username_group(uid: u32, gid: u32) -> (String, String) {
+	let grp = unsafe {
+		let g = libc::getgrgid(gid);
+		if g as usize > 0 {
+			CStr::from_ptr((*g).gr_name)
+		} else {
+			CStr::from_bytes_with_nul(b"\0").unwrap()
+		}
+	};
+	let usr = unsafe {
+		let u = libc::getpwuid(uid);
+		if u as usize > 0 {
+			CStr::from_ptr((*u).pw_name)
+		} else {
+			CStr::from_bytes_with_nul(b"\0").unwrap()
+		}
+	};
+	return (
+		String::from_utf8_lossy(usr.to_bytes()).to_string(),
+		String::from_utf8_lossy(grp.to_bytes()).to_string(),
+	);
 }

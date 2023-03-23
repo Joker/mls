@@ -1,3 +1,4 @@
+use std::fs::Metadata;
 use std::os::unix::prelude::{MetadataExt, PermissionsExt};
 use std::path::{Path, PathBuf};
 
@@ -13,6 +14,7 @@ pub struct File {
 	pub len: usize,
 	pub dir: bool,
 	pub size: u64,
+	pub md: Metadata,
 	// pub dot: bool,
 	// pub exe: bool,
 	// pub lnk: bool,
@@ -77,10 +79,11 @@ pub fn file_info(path: &PathBuf, hide: bool, long: bool) -> Option<File> {
 	if dot && hide || !dot {
 		return Some(File {
 			name,
-			size: if long && !dir { md.size() } else { 0 },
+			size: if !dir { md.size() } else { 0 },
 			ext,
 			len,
 			dir,
+			md,
 		});
 	} else {
 		return None;

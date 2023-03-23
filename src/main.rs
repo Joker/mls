@@ -1,7 +1,7 @@
 mod color;
 mod display;
 mod info;
-mod termsize;
+mod unsafelibc;
 
 use std::cmp::Reverse;
 use std::fs;
@@ -15,7 +15,9 @@ fn main() {
 		.helptext("Usage: mls")
 		.version("1.0")
 		.flag("a")
-		.flag("l");
+		.flag("l")
+		.flag("S")
+		.flag("h");
 	if let Err(err) = parser.parse() {
 		err.exit();
 	}
@@ -26,6 +28,7 @@ fn main() {
 	};
 	let l = parser.found("l");
 	let a = parser.found("a");
+	let h = parser.found("h");
 
 	//
 
@@ -42,9 +45,14 @@ fn main() {
 		println!(".   ..");
 		return;
 	}
-	file_list.sort_by_key(|f| (Reverse(f.dir), f.ext.clone(), f.name.clone()));
+	if parser.found("S") {
+		file_list.sort_by_key(|f| (f.size, Reverse(f.dir)));
+	} else {
+		file_list.sort_by_key(|f| (Reverse(f.dir), f.ext.clone(), f.name.clone()));
+	}
+
 	if l {
-		println!("{}", display::list::to_string(&file_list));
+		println!("{}", display::list::to_string(&file_list, h));
 		return;
 	}
 	println!("{}", display::grid::to_string(&file_list));
