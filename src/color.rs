@@ -1,7 +1,7 @@
 // pub static BLACK: &str = "\x1b[0;30m";
 pub static RED: &str = "\x1b[0;31m";
 pub static GREEN: &str = "\x1b[0;32m";
-// pub static YELLOW: &str = "\x1b[0;33m";
+pub static YELLOW: &str = "\x1b[0;33m";
 // pub static BLUE: &str = "\x1b[0;34m";
 // pub static MAGENTA: &str = "\x1b[0;35m";
 pub static CYAN: &str = "\x1b[0;36m";
@@ -15,9 +15,9 @@ pub static GREEN_H: &str = "\x1b[1;32m";
 // pub static CYAN_H: &str = "\x1b[1;36m";
 // pub static WHITE_H: &str = "\x1b[1;37m";
 // pub static BLACK_L: &str = "\x1b[0;90m";
-// pub static RED_L: &str = "\x1b[0;91m";
+pub static RED_L: &str = "\x1b[0;91m";
 pub static GREEN_L: &str = "\x1b[0;92m";
-// pub static YELLOW_L: &str = "\x1b[0;93m";
+pub static YELLOW_L: &str = "\x1b[0;93m";
 pub static BLUE_L: &str = "\x1b[0;94m";
 pub static MAGENTA_L: &str = "\x1b[0;95m";
 // pub static CYAN_L: &str = "\x1b[0;96m";
@@ -99,4 +99,36 @@ pub fn size_fmt(bytes: u64) -> String {
 		bt if bt >= 1 => format!("{GREEN_L}{}{GREEN}", bt),
 		_ => format!("{GREEN_L}0{GREEN}"),
 	}
+}
+
+fn bits(rwx: u32, n: u8) -> Vec<bool> {
+	let mut v = (0..n)
+		.map(|n| if (rwx >> n) & 1 == 1 { true } else { false })
+		.collect::<Vec<bool>>();
+	v.reverse();
+	v
+}
+
+pub fn permissions_fmt(rwx: u32) -> String {
+	let mut out = String::from("");
+	let vp = [
+		format!("{YELLOW_L}r"),
+		format!("{RED_L}w"),
+		format!("{GREEN_L}x"),
+		format!("{YELLOW}r"),
+		format!("{RED}w"),
+		format!("{GREEN}x"),
+		format!("{YELLOW}r"),
+		format!("{RED}w"),
+		format!("{GREEN}x"),
+	];
+	for (i, one) in bits(rwx, 9).iter().enumerate() {
+		if *one {
+			out.push_str(&vp[i]);
+		} else {
+			out.push_str(&format!("{WHITE}-"));
+		}
+	}
+
+	out
 }

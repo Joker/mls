@@ -65,8 +65,14 @@ pub fn file_info(path: &PathBuf, hide: bool, long: bool) -> Option<File> {
 	let md = std::fs::symlink_metadata(path).unwrap();
 
 	let dot = fname.chars().next().unwrap() == '.';
-	let rwx = md.permissions().mode(); // println!("permissions: {:o} {}", rwx, fname);
+	let rwx = md.permissions().mode();
+
+	if long {}
+
 	let lnk = md.is_symlink();
+	// let mtm = md.modified().ok().unwrap();
+	// let atm = md.accessed().ok().unwrap();
+	// let ctm = md.created().ok().unwrap();
 	let exe = rwx & S_IXUSR as u32 == S_IXUSR as u32;
 
 	let len = fname.chars().count() + INDENT;
