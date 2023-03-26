@@ -1,3 +1,5 @@
+use crate::display::{spaces, SIZE_WIDTH};
+
 // pub static BLACK: &str = "\x1b[0;30m";
 pub static RED: &str = "\x1b[0;31m";
 pub static GREEN: &str = "\x1b[0;32m";
@@ -7,7 +9,7 @@ pub static YELLOW: &str = "\x1b[0;33m";
 pub static CYAN: &str = "\x1b[0;36m";
 pub static WHITE: &str = "\x1b[0;37m";
 // pub static BLACK_H: &str = "\x1b[1;30m";
-// pub static RED_H: &str = "\x1b[1;31m";
+pub static RED_H: &str = "\x1b[1;31m";
 pub static GREEN_H: &str = "\x1b[1;32m";
 // pub static YELLOW_H: &str = "\x1b[1;33m";
 // pub static BLUE_H: &str = "\x1b[1;34m";
@@ -55,49 +57,28 @@ pub fn colorise(name: &str, ext: &str, dir: bool, exe: bool, egrp: u8, lnk: bool
 	return format!("{color}{name}");
 }
 
+fn short_size(bytes: u64, dimension: u64) -> String {
+	let n = bytes / dimension;
+	let m = bytes % dimension;
+	return if m > 0 && n < 100 {
+		format!("{}.{}", n, m.to_string().chars().next().unwrap())
+	} else {
+		format!("{n}")
+	};
+}
+
+fn color_size(size: String, suffix: &str) -> String {
+	let sp = spaces(SIZE_WIDTH - size.len() - suffix.len());
+	format!("{GREEN_L}{sp}{size}{GREEN}{suffix}")
+}
+
 pub fn size_fmt(bytes: u64) -> String {
 	match bytes {
-		bt if bt >= 1073741824 => {
-			let n = bt / 1073741824;
-			let m = bt % 1073741824;
-			return if m > 0 && n < 100 {
-				format!(
-					"{GREEN_L}{}.{}{GREEN}G",
-					n,
-					m.to_string().chars().next().unwrap()
-				)
-			} else {
-				format!("{GREEN_L}{}{GREEN}G", n)
-			};
-		}
-		bt if bt >= 1048576 => {
-			let n = bt / 1048576;
-			let m = bt % 1048576;
-			return if m > 0 && n < 100 {
-				format!(
-					"{GREEN_L}{}.{}{GREEN}M",
-					n,
-					m.to_string().chars().next().unwrap()
-				)
-			} else {
-				format!("{GREEN_L}{}{GREEN}M", n)
-			};
-		}
-		bt if bt >= 1024 => {
-			let n = bt / 1024;
-			let m = bt % 1024;
-			return if m > 0 && n < 100 {
-				format!(
-					"{GREEN_L}{}.{}{GREEN}k",
-					n,
-					m.to_string().chars().next().unwrap()
-				)
-			} else {
-				format!("{GREEN_L}{}{GREEN}k", n)
-			};
-		}
-		bt if bt >= 1 => format!("{GREEN_L}{}{GREEN}", bt),
-		_ => format!("{GREEN_L}0{GREEN}"),
+		bt if bt >= 1073741824 => color_size(short_size(bt, 1073741824), "G"),
+		bt if bt >= 1048576 => color_size(short_size(bt, 1048576), "M"),
+		bt if bt >= 1024 => color_size(short_size(bt, 1024), "k"),
+		bt if bt >= 1 => color_size(bt.to_string(), ""),
+		_ => format!("{GREEN_L}{}0{GREEN}", spaces(SIZE_WIDTH - 1)),
 	}
 }
 
@@ -129,6 +110,5 @@ pub fn permissions_fmt(rwx: u32) -> String {
 			out.push_str(&format!("{WHITE}-"));
 		}
 	}
-
 	out
 }

@@ -4,11 +4,12 @@ use std::path::{Path, PathBuf};
 
 use libc::S_IXUSR;
 
-use crate::color::colorise;
+use crate::color::{colorise, CYAN, RED_H, WHITE};
 use crate::display::INDENT;
 
 #[derive(Clone, Debug)]
 pub struct File {
+	pub path: PathBuf,
 	pub name: String,
 	pub ext: String,
 	pub len: usize,
@@ -17,8 +18,8 @@ pub struct File {
 	pub md: Metadata,
 	// pub dot: bool,
 	// pub exe: bool,
-	// pub lnk: bool,
-	// pub rwx: u32,
+	pub lnk: bool,
+	// pub linkpath: Option<String>,
 }
 
 fn filename(path: &Path) -> String {
@@ -61,15 +62,21 @@ fn ext_group(ext: String) -> (String, u8) {
 }
 
 pub fn file_info(path: &PathBuf, hide: bool, long: bool) -> Option<File> {
-	let fname = filename(path);
+	let mut fname = filename(path);
 	let md = std::fs::symlink_metadata(path).unwrap();
 
 	let dot = fname.chars().next().unwrap() == '.';
 	let rwx = md.permissions().mode();
 
-	if long {}
-
 	let lnk = md.is_symlink();
+	if long && lnk {
+		fname.push_str(&read_link(&path))
+	}
+	// let linkpath = if long && lnk {
+	// 	Some(read_link(&path))
+	// } else {
+	// 	None
+	// };
 	// let mtm = md.modified().ok().unwrap();
 	// let atm = md.accessed().ok().unwrap();
 	// let ctm = md.created().ok().unwrap();
@@ -84,14 +91,48 @@ pub fn file_info(path: &PathBuf, hide: bool, long: bool) -> Option<File> {
 
 	if dot && hide || !dot {
 		return Some(File {
+			path: path.clone(),
 			name,
 			size: if !dir { md.size() } else { 0 },
 			ext,
 			len,
 			dir,
+			lnk,
+			// linkpath,
 			md,
 		});
 	} else {
 		return None;
 	}
+}
+
+fn read_link(pb: &PathBuf) -> String {
+	let path = match std::fs::read_link(pb) {
+		Ok(lnk) => lnk,
+		Err(_) => return String::from("link error"),
+	};
+
+	// println!("{:?}", std::fs::canonicalize(&path));
+
+	let dir;
+	let rwx;
+	let name = filename(&path);
+	match std::fs::metadata(&path) {
+		Ok(metadata) => {
+			dir = metadata.is_dir();
+			rwx = metadata.permissions().mode();
+		}
+		Err(_) => return format!("{RED_H} -> {}", path.to_string_lossy()),
+	}
+	let (ext, egrp) = ext_group(ext(&path));
+	let exe = rwx & S_IXUSR as u32 == S_IXUSR as u32;
+	
+	format!(
+		"{} -> {}{}{}",
+		WHITE,
+		CYAN,
+		std::fs::canonicalize(&path).unwrap().to_string_lossy().replace(&name, ""),
+		// path.to_string_lossy().as_ref().replace(&name, ""),
+		colorise(&name, &ext, dir, exe, egrp, false)
+	)
 }
