@@ -56,5 +56,3 @@ fn file_size(f: &File, unreadable: bool) -> String {
 	}
 	size_fmt(f.size)
 }
-
-

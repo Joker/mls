@@ -61,7 +61,7 @@ fn ext_group(ext: String) -> (String, u8) {
 	}
 }
 
-pub fn file_info(path: &PathBuf, hide: bool, long: bool) -> Option<File> {
+pub fn file_info(path: &PathBuf, hide: bool, long: bool, abs: bool) -> Option<File> {
 	let mut fname = filename(path);
 	let md = std::fs::symlink_metadata(path).unwrap();
 
@@ -70,7 +70,7 @@ pub fn file_info(path: &PathBuf, hide: bool, long: bool) -> Option<File> {
 
 	let lnk = md.is_symlink();
 	if long && lnk {
-		fname.push_str(&read_link(&path))
+		fname.push_str(&read_link(&path, abs))
 	}
 	// let linkpath = if long && lnk {
 	// 	Some(read_link(&path))
@@ -106,7 +106,7 @@ pub fn file_info(path: &PathBuf, hide: bool, long: bool) -> Option<File> {
 	}
 }
 
-fn read_link(pb: &PathBuf) -> String {
+fn read_link(pb: &PathBuf, abs: bool) -> String {
 	let path = match std::fs::read_link(pb) {
 		Ok(lnk) => lnk,
 		Err(_) => return String::from("link error"),
@@ -127,12 +127,20 @@ fn read_link(pb: &PathBuf) -> String {
 	let (ext, egrp) = ext_group(ext(&path));
 	let exe = rwx & S_IXUSR as u32 == S_IXUSR as u32;
 	
+	let path_to = if abs {
+		match std::fs::canonicalize(&path) {
+			Ok(s) => s.to_string_lossy().replace(&name, ""),
+			Err(_) => path.to_string_lossy().replace(&name, ""),
+		}
+	} else {
+		path.to_string_lossy().replace(&name, "")
+	};
+
 	format!(
 		"{} -> {}{}{}",
 		WHITE,
 		CYAN,
-		std::fs::canonicalize(&path).unwrap().to_string_lossy().replace(&name, ""),
-		// path.to_string_lossy().as_ref().replace(&name, ""),
+		path_to,
 		colorise(&name, &ext, dir, exe, egrp, false)
 	)
 }

@@ -17,6 +17,7 @@ fn main() {
 		.flag("a")
 		.flag("l")
 		.flag("S")
+		.flag("f")
 		.flag("h");
 	if let Err(err) = parser.parse() {
 		err.exit();
@@ -29,12 +30,13 @@ fn main() {
 	let l = parser.found("l");
 	let a = parser.found("a");
 	let h = parser.found("h");
+	let f = parser.found("f");
 
 	//
 
 	let mut file_list = match fs::read_dir(dir) {
 		Ok(list) => list
-			.filter_map(|x| file_info(&x.unwrap().path(), a, l))
+			.filter_map(|x| file_info(&x.unwrap().path(), a, l, f))
 			.collect::<Vec<File>>(),
 		Err(e) => {
 			println!("{}", e);
