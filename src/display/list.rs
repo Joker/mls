@@ -3,7 +3,7 @@ use std::os::unix::prelude::{MetadataExt, PermissionsExt};
 use super::spaces;
 use crate::color::{permissions_fmt, BLUE_L, CYAN, MAGENTA, WHITE};
 use crate::datetime::date_time_fmt;
-use crate::display::SIZE_WIDTH;
+use crate::display::{SIZE_WIDTH, TIMEZONE};
 use crate::unsafelibc::username_group;
 use crate::{color::size_fmt, info::File};
 
@@ -17,16 +17,17 @@ pub fn to_string(files: &Vec<File>, unreadable: bool) -> String {
 
 fn line_fmt(f: &File, unreadable: bool) -> String {
 	let (username, group) = username_group(f.md.uid(), f.md.gid());
-	let mtm = f.md.modified().ok().unwrap();
+	// let mtm = f.md.modified().ok().unwrap();
 	// let atm = md.accessed().ok().unwrap();
 	// let ctm = md.created().ok().unwrap();
+
 	format!(
-		"{WHITE}{}{} {WHITE}{} {} {} {} {}",
+		"{WHITE}{}{} {WHITE}{} {}  {}  {}  {}",
 		kind(f),
 		permissions_fmt(f.md.permissions().mode()),
 		username,
 		group,
-		date_time_fmt(mtm),
+		date_time_fmt(f.time + TIMEZONE),
 		file_size(f, unreadable),
 		f.name,
 	)

@@ -1,8 +1,8 @@
 mod color;
+mod datetime;
 mod display;
 mod info;
 mod unsafelibc;
-mod datetime;
 
 use std::cmp::Reverse;
 use std::fs;
@@ -18,6 +18,7 @@ fn main() {
 		.flag("a")
 		.flag("l")
 		.flag("S")
+		.flag("t")
 		.flag("f")
 		.flag("h");
 	if let Err(err) = parser.parse() {
@@ -50,6 +51,8 @@ fn main() {
 	}
 	if parser.found("S") {
 		file_list.sort_by_key(|f| (f.size, Reverse(f.dir)));
+	} else if parser.found("t") {
+		file_list.sort_by_key(|f| (f.time, Reverse(f.dir)));
 	} else {
 		file_list.sort_by_key(|f| (Reverse(f.dir), f.ext.clone(), f.sname.clone()));
 	}

@@ -1,6 +1,7 @@
 use std::fs::Metadata;
 use std::os::unix::prelude::{MetadataExt, PermissionsExt};
 use std::path::{Path, PathBuf};
+use std::time::UNIX_EPOCH;
 
 use libc::S_IXUSR;
 
@@ -15,6 +16,7 @@ pub struct File {
 	pub len: usize,
 	pub dir: bool,
 	pub size: u64,
+	pub time: u64,
 	pub md: Metadata,
 	// pub dot: bool,
 	// pub exe: bool,
@@ -69,6 +71,13 @@ pub fn file_info(path: &PathBuf, hide: bool, long: bool, abs: bool) -> Option<Fi
 	let md = std::fs::symlink_metadata(path).unwrap();
 	let rwx = md.permissions().mode();
 	let lnk = md.is_symlink();
+	let time = md
+		.modified()
+		.ok()
+		.unwrap()
+		.duration_since(UNIX_EPOCH)
+		.unwrap()
+		.as_secs();
 	let mut dir = md.is_dir();
 
 	let exe = rwx & S_IXUSR as u32 == S_IXUSR as u32;
@@ -88,6 +97,7 @@ pub fn file_info(path: &PathBuf, hide: bool, long: bool, abs: bool) -> Option<Fi
 			name,
 			sname,
 			size: if !dir { md.size() } else { 0 },
+			time,
 			ext,
 			len,
 			dir,
