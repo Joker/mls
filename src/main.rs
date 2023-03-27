@@ -50,8 +50,10 @@ fn main() {
 	if parser.found("S") {
 		file_list.sort_by_key(|f| (f.size, Reverse(f.dir)));
 	} else {
-		file_list.sort_by_key(|f| (Reverse(f.dir), f.ext.clone(), f.name.clone()));
+		file_list.sort_by_key(|f| (Reverse(f.dir), f.ext.clone(), f.sname.clone()));
 	}
+
+	//
 
 	if l {
 		println!("{}", display::list::to_string(&file_list, h));

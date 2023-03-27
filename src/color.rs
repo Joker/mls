@@ -27,7 +27,7 @@ pub static MAGENTA_L: &str = "\x1b[0;95m";
 pub static XT22: &str = "\x1b[38;5;22m";
 pub static XT36: &str = "\x1b[38;5;36m";
 
-pub fn colorise(name: &str, ext: &str, dir: bool, exe: bool, egrp: u8, lnk: bool) -> String {
+pub fn colorise(name: &str, ext: &str, egrp: u8, dir: bool, exe: bool, lnk: bool) -> String {
 	if dir {
 		return format!("{BLUE_L}{name}");
 	}

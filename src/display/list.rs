@@ -28,12 +28,12 @@ fn line_fmt(f: &File, unreadable: bool) -> String {
 }
 
 fn kind(f: &File) -> String {
-	if f.dir {
-		return format!("{BLUE_L}d");
-	}
 	if f.lnk {
 		// read_link(f);
 		return format!("{CYAN}l");
+	}
+	if f.dir {
+		return format!("{BLUE_L}d");
 	}
 	String::from(" ")
 }

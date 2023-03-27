@@ -9,8 +9,8 @@ use crate::display::INDENT;
 
 #[derive(Clone, Debug)]
 pub struct File {
-	pub path: PathBuf,
 	pub name: String,
+	pub sname: String,
 	pub ext: String,
 	pub len: usize,
 	pub dir: bool,
@@ -62,43 +62,42 @@ fn ext_group(ext: String) -> (String, u8) {
 }
 
 pub fn file_info(path: &PathBuf, hide: bool, long: bool, abs: bool) -> Option<File> {
-	let mut fname = filename(path);
+	let sname = filename(path);
+	// let sname = name.clone();
+	let len = sname.chars().count() + INDENT;
+	let dot = sname.chars().next().unwrap() == '.';
+
 	let md = std::fs::symlink_metadata(path).unwrap();
-
-	let dot = fname.chars().next().unwrap() == '.';
 	let rwx = md.permissions().mode();
-
 	let lnk = md.is_symlink();
-	if long && lnk {
-		fname.push_str(&read_link(&path, abs))
-	}
-	// let linkpath = if long && lnk {
-	// 	Some(read_link(&path))
-	// } else {
-	// 	None
-	// };
+	let mut dir = md.is_dir();
+
 	// let mtm = md.modified().ok().unwrap();
 	// let atm = md.accessed().ok().unwrap();
 	// let ctm = md.created().ok().unwrap();
+
 	let exe = rwx & S_IXUSR as u32 == S_IXUSR as u32;
-
-	let len = fname.chars().count() + INDENT;
-	// if lnk { len += 1 }
-
 	let (ext, egrp) = ext_group(ext(path));
-	let dir = md.is_dir();
-	let name = colorise(&fname, &ext, dir, exe, egrp, lnk);
+
+	let mut name = colorise(&sname, &ext, egrp, dir, exe, lnk);
+	if lnk {
+		let (fname, d) = read_lnk(&path, abs);
+		dir = d;
+		if long {
+			name.push_str(&fname);
+		}
+		// if ex != "" { ext = ex };
+	}
 
 	if dot && hide || !dot {
 		return Some(File {
-			path: path.clone(),
 			name,
+			sname,
 			size: if !dir { md.size() } else { 0 },
 			ext,
 			len,
 			dir,
 			lnk,
-			// linkpath,
 			md,
 		});
 	} else {
@@ -106,13 +105,11 @@ pub fn file_info(path: &PathBuf, hide: bool, long: bool, abs: bool) -> Option<Fi
 	}
 }
 
-fn read_link(pb: &PathBuf, abs: bool) -> String {
+fn read_lnk(pb: &PathBuf, abs: bool) -> (String, bool) {
 	let path = match std::fs::read_link(pb) {
 		Ok(lnk) => lnk,
-		Err(_) => return String::from("link error"),
+		Err(_) => return (String::from("link error"), false),
 	};
-
-	// println!("{:?}", std::fs::canonicalize(&path));
 
 	let dir;
 	let rwx;
@@ -122,11 +119,12 @@ fn read_link(pb: &PathBuf, abs: bool) -> String {
 			dir = metadata.is_dir();
 			rwx = metadata.permissions().mode();
 		}
-		Err(_) => return format!("{RED_H} -> {}", path.to_string_lossy()),
+		Err(_) => return (format!("{RED_H} -> {}", path.to_string_lossy()), false),
 	}
+
 	let (ext, egrp) = ext_group(ext(&path));
 	let exe = rwx & S_IXUSR as u32 == S_IXUSR as u32;
-	
+
 	let path_to = if abs {
 		match std::fs::canonicalize(&path) {
 			Ok(s) => s.to_string_lossy().replace(&name, ""),
@@ -136,11 +134,14 @@ fn read_link(pb: &PathBuf, abs: bool) -> String {
 		path.to_string_lossy().replace(&name, "")
 	};
 
-	format!(
-		"{} -> {}{}{}",
-		WHITE,
-		CYAN,
-		path_to,
-		colorise(&name, &ext, dir, exe, egrp, false)
+	(
+		format!(
+			"{} -> {}{}{}",
+			WHITE,
+			CYAN,
+			path_to,
+			colorise(&name, &ext, egrp, dir, exe, false)
+		),
+		dir,
 	)
 }
