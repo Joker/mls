@@ -1,7 +1,8 @@
 use std::os::unix::prelude::{MetadataExt, PermissionsExt};
 
 use super::spaces;
-use crate::color::{permissions_fmt, BLUE_L, CYAN, WHITE};
+use crate::color::{permissions_fmt, BLUE_L, CYAN, MAGENTA, WHITE};
+use crate::datetime::date_time_fmt;
 use crate::display::SIZE_WIDTH;
 use crate::unsafelibc::username_group;
 use crate::{color::size_fmt, info::File};
@@ -16,12 +17,16 @@ pub fn to_string(files: &Vec<File>, unreadable: bool) -> String {
 
 fn line_fmt(f: &File, unreadable: bool) -> String {
 	let (username, group) = username_group(f.md.uid(), f.md.gid());
+	let mtm = f.md.modified().ok().unwrap();
+	// let atm = md.accessed().ok().unwrap();
+	// let ctm = md.created().ok().unwrap();
 	format!(
-		"{WHITE}{}{} {WHITE}{} {} {} {}",
+		"{WHITE}{}{} {WHITE}{} {} {} {} {}",
 		kind(f),
 		permissions_fmt(f.md.permissions().mode()),
 		username,
 		group,
+		date_time_fmt(mtm),
 		file_size(f, unreadable),
 		f.name,
 	)
@@ -29,13 +34,16 @@ fn line_fmt(f: &File, unreadable: bool) -> String {
 
 fn kind(f: &File) -> String {
 	if f.lnk {
-		// read_link(f);
 		return format!("{CYAN}l");
 	}
 	if f.dir {
 		return format!("{BLUE_L}d");
 	}
-	String::from(" ")
+	match f.md.nlink() {
+		n if n > 9 => return format!("{MAGENTA}*"),
+		n if n > 1 => return format!("{MAGENTA}{n}"),
+		_ => return String::from(" "),
+	}
 }
 
 fn file_size(f: &File, unreadable: bool) -> String {

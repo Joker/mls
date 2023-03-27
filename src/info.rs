@@ -4,8 +4,8 @@ use std::path::{Path, PathBuf};
 
 use libc::S_IXUSR;
 
-use crate::color::{colorise, CYAN, RED_H, WHITE};
-use crate::display::INDENT;
+use crate::color::{colorise, CYAN, RED, WHITE};
+use crate::display::GRID_GAP;
 
 #[derive(Clone, Debug)]
 pub struct File {
@@ -63,18 +63,13 @@ fn ext_group(ext: String) -> (String, u8) {
 
 pub fn file_info(path: &PathBuf, hide: bool, long: bool, abs: bool) -> Option<File> {
 	let sname = filename(path);
-	// let sname = name.clone();
-	let len = sname.chars().count() + INDENT;
+	let len = sname.chars().count() + GRID_GAP;
 	let dot = sname.chars().next().unwrap() == '.';
 
 	let md = std::fs::symlink_metadata(path).unwrap();
 	let rwx = md.permissions().mode();
 	let lnk = md.is_symlink();
 	let mut dir = md.is_dir();
-
-	// let mtm = md.modified().ok().unwrap();
-	// let atm = md.accessed().ok().unwrap();
-	// let ctm = md.created().ok().unwrap();
 
 	let exe = rwx & S_IXUSR as u32 == S_IXUSR as u32;
 	let (ext, egrp) = ext_group(ext(path));
@@ -86,7 +81,6 @@ pub fn file_info(path: &PathBuf, hide: bool, long: bool, abs: bool) -> Option<Fi
 		if long {
 			name.push_str(&fname);
 		}
-		// if ex != "" { ext = ex };
 	}
 
 	if dot && hide || !dot {
@@ -119,7 +113,7 @@ fn read_lnk(pb: &PathBuf, abs: bool) -> (String, bool) {
 			dir = metadata.is_dir();
 			rwx = metadata.permissions().mode();
 		}
-		Err(_) => return (format!("{RED_H} -> {}", path.to_string_lossy()), false),
+		Err(_) => return (format!("{RED} -> {}", path.to_string_lossy()), false),
 	}
 
 	let (ext, egrp) = ext_group(ext(&path));
@@ -133,13 +127,9 @@ fn read_lnk(pb: &PathBuf, abs: bool) -> (String, bool) {
 	} else {
 		path.to_string_lossy().replace(&name, "")
 	};
-
 	(
 		format!(
-			"{} -> {}{}{}",
-			WHITE,
-			CYAN,
-			path_to,
+			"{WHITE} -> {CYAN}{path_to}{}",
 			colorise(&name, &ext, egrp, dir, exe, false)
 		),
 		dir,

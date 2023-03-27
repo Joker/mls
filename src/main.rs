@@ -2,6 +2,7 @@ mod color;
 mod display;
 mod info;
 mod unsafelibc;
+mod datetime;
 
 use std::cmp::Reverse;
 use std::fs;

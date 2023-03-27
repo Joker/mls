@@ -5,11 +5,11 @@ pub static RED: &str = "\x1b[0;31m";
 pub static GREEN: &str = "\x1b[0;32m";
 pub static YELLOW: &str = "\x1b[0;33m";
 // pub static BLUE: &str = "\x1b[0;34m";
-// pub static MAGENTA: &str = "\x1b[0;35m";
+pub static MAGENTA: &str = "\x1b[0;35m";
 pub static CYAN: &str = "\x1b[0;36m";
 pub static WHITE: &str = "\x1b[0;37m";
 // pub static BLACK_H: &str = "\x1b[1;30m";
-pub static RED_H: &str = "\x1b[1;31m";
+// pub static RED_H: &str = "\x1b[1;31m";
 pub static GREEN_H: &str = "\x1b[1;32m";
 // pub static YELLOW_H: &str = "\x1b[1;33m";
 // pub static BLUE_H: &str = "\x1b[1;34m";
@@ -28,11 +28,11 @@ pub static XT22: &str = "\x1b[38;5;22m";
 pub static XT36: &str = "\x1b[38;5;36m";
 
 pub fn colorise(name: &str, ext: &str, egrp: u8, dir: bool, exe: bool, lnk: bool) -> String {
-	if dir {
-		return format!("{BLUE_L}{name}");
-	}
 	if lnk {
 		return format!("{CYAN}{name}");
+	}
+	if dir {
+		return format!("{BLUE_L}{name}");
 	}
 	if exe {
 		return format!("{GREEN_H}{name}");
@@ -41,7 +41,7 @@ pub fn colorise(name: &str, ext: &str, egrp: u8, dir: bool, exe: bool, lnk: bool
 	let color = if egrp > 0 {
 		match egrp {
 			1 => MAGENTA_L,
-			2 => RED,
+			2 => YELLOW,
 			3 => XT22,
 			4 => XT36,
 			_ => WHITE,

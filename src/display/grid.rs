@@ -1,6 +1,6 @@
 use std::usize;
 
-use super::{spaces, INDENT};
+use super::{spaces, GRID_GAP};
 use crate::{unsafelibc::terminal_size, File};
 
 fn width_sizes(names: &Vec<File>, stack_size: usize) -> (usize, Vec<usize>) {
@@ -67,7 +67,7 @@ pub fn to_string(files: &Vec<File>) -> String {
 			.iter()
 			.map(|x| x.name.as_str())
 			.collect::<Vec<_>>()
-			.join(&spaces(INDENT));
+			.join(&spaces(GRID_GAP));
 	}
 
 	let mut str_vec: Vec<String> = Vec::with_capacity(stack);
@@ -80,7 +80,7 @@ pub fn to_string(files: &Vec<File>) -> String {
 		str_vec[row_num].push_str(&nm.name);
 
 		if column_sizes[col_num] >= files[i].len {
-			str_vec[row_num].push_str(&spaces(column_sizes[col_num] - files[i].len + INDENT));
+			str_vec[row_num].push_str(&spaces(column_sizes[col_num] - files[i].len + GRID_GAP));
 		}
 	}
 
