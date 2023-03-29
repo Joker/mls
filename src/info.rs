@@ -8,6 +8,7 @@ use libc::S_IXUSR;
 use crate::color::{colorise, CYAN, RED, WHITE};
 use crate::display::GRID_GAP;
 use crate::unsafelibc::username_group;
+use crate::Flag;
 
 #[derive(Clone, Debug)]
 pub struct File {
@@ -64,13 +65,25 @@ fn ext_group(ext: String) -> (String, u8) {
 	}
 }
 
-pub fn file_info(
-	path: &PathBuf,
-	hide: bool,
-	long: bool,
-	abs: bool,
-	nlen: &mut usize,
-) -> Option<File> {
+fn time(md: &Metadata, fl: &Flag) -> u64 {
+	if fl.U_create {
+		match md.created().ok() {
+			Some(t) => match t.duration_since(UNIX_EPOCH) {
+				Ok(s) => s.as_secs(),
+				Err(_) => 0,
+			},
+			None => 0,
+		}
+	} else if fl.u_access {
+		md.atime() as u64
+	} else if fl.ctime {
+		md.atime() as u64
+	} else {
+		md.mtime() as u64
+	}
+}
+
+pub fn file_info(path: &PathBuf, fl: &Flag, nlen: &mut usize) -> Option<File> {
 	let sname = filename(path);
 	let len = sname.chars().count() + GRID_GAP;
 	let dot = sname.chars().next().unwrap() == '.';
@@ -78,15 +91,7 @@ pub fn file_info(
 	let md = std::fs::symlink_metadata(path).unwrap();
 	let rwx = md.permissions().mode();
 	let lnk = md.is_symlink();
-	// let atm = md.accessed().ok().unwrap();
-	// let ctm = md.created().ok().unwrap();
-	let time = md
-		.modified()
-		.ok()
-		.unwrap()
-		.duration_since(UNIX_EPOCH)
-		.unwrap()
-		.as_secs();
+	let time = time(&md, fl);
 
 	let exe = rwx & S_IXUSR as u32 == S_IXUSR as u32;
 	let (ext, egrp) = ext_group(ext(path));
@@ -103,7 +108,7 @@ pub fn file_info(
 			}
 		}
 	};
-	let user = if long {
+	let user = if fl.long {
 		let uid_gid = username_group(md.uid(), md.gid());
 		if *nlen < uid_gid.len() {
 			*nlen = uid_gid.len()
@@ -114,14 +119,14 @@ pub fn file_info(
 	};
 
 	if lnk {
-		let (fname, d) = read_lnk(&path, abs);
+		let (fname, d) = read_lnk(&path, fl.full);
 		dir = d;
-		if long {
+		if fl.long {
 			name.push_str(&fname);
 		}
 	}
 
-	if dot && hide || !dot {
+	if dot && fl.all || !dot {
 		return Some(File {
 			name,
 			sname,

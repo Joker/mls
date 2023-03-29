@@ -67,3 +67,8 @@ pub fn username_group(uid: u32, gid: u32) -> String {
 		String::from_utf8_lossy(grp.to_bytes()).to_string()
 	)
 }
+
+pub fn _localtime(time_p: *const i64) {
+	let t = unsafe { libc::localtime(time_p) };
+	println!("{:#?}", t);
+}
