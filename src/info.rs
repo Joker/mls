@@ -7,6 +7,7 @@ use libc::S_IXUSR;
 
 use crate::color::{colorise, CYAN, RED, WHITE};
 use crate::display::GRID_GAP;
+use crate::unsafelibc::username_group;
 
 #[derive(Clone, Debug)]
 pub struct File {
@@ -21,7 +22,7 @@ pub struct File {
 	// pub dot: bool,
 	// pub exe: bool,
 	pub lnk: bool,
-	// pub linkpath: Option<String>,
+	pub user: Option<String>,
 }
 
 fn filename(path: &Path) -> String {
@@ -63,7 +64,13 @@ fn ext_group(ext: String) -> (String, u8) {
 	}
 }
 
-pub fn file_info(path: &PathBuf, hide: bool, long: bool, abs: bool) -> Option<File> {
+pub fn file_info(
+	path: &PathBuf,
+	hide: bool,
+	long: bool,
+	abs: bool,
+	nlen: &mut usize,
+) -> Option<File> {
 	let sname = filename(path);
 	let len = sname.chars().count() + GRID_GAP;
 	let dot = sname.chars().next().unwrap() == '.';
@@ -71,6 +78,8 @@ pub fn file_info(path: &PathBuf, hide: bool, long: bool, abs: bool) -> Option<Fi
 	let md = std::fs::symlink_metadata(path).unwrap();
 	let rwx = md.permissions().mode();
 	let lnk = md.is_symlink();
+	// let atm = md.accessed().ok().unwrap();
+	// let ctm = md.created().ok().unwrap();
 	let time = md
 		.modified()
 		.ok()
@@ -78,12 +87,32 @@ pub fn file_info(path: &PathBuf, hide: bool, long: bool, abs: bool) -> Option<Fi
 		.duration_since(UNIX_EPOCH)
 		.unwrap()
 		.as_secs();
-	let mut dir = md.is_dir();
 
 	let exe = rwx & S_IXUSR as u32 == S_IXUSR as u32;
 	let (ext, egrp) = ext_group(ext(path));
-
+	let mut dir = md.is_dir();
 	let mut name = colorise(&sname, &ext, egrp, dir, exe, lnk);
+	let size = match dir && !lnk {
+		false => md.size(),
+		true => {
+			let s = md.nlink();
+			if s < 3 {
+				0
+			} else {
+				s - 2
+			}
+		}
+	};
+	let user = if long {
+		let uid_gid = username_group(md.uid(), md.gid());
+		if *nlen < uid_gid.len() {
+			*nlen = uid_gid.len()
+		}
+		Some(uid_gid)
+	} else {
+		None
+	};
+
 	if lnk {
 		let (fname, d) = read_lnk(&path, abs);
 		dir = d;
@@ -96,17 +125,18 @@ pub fn file_info(path: &PathBuf, hide: bool, long: bool, abs: bool) -> Option<Fi
 		return Some(File {
 			name,
 			sname,
-			size: if !dir { md.size() } else { 0 },
+			size,
 			time,
 			ext,
 			len,
 			dir,
 			lnk,
 			md,
+			user,
 		});
-	} else {
-		return None;
 	}
+
+	return None;
 }
 
 fn read_lnk(pb: &PathBuf, abs: bool) -> (String, bool) {

@@ -44,7 +44,7 @@ pub fn terminal_size() -> io::Result<(usize, usize)> {
 	}
 }
 
-pub fn username_group(uid: u32, gid: u32) -> (String, String) {
+pub fn username_group(uid: u32, gid: u32) -> String {
 	let grp = unsafe {
 		let g = libc::getgrgid(gid);
 		if g as usize > 0 {
@@ -61,8 +61,9 @@ pub fn username_group(uid: u32, gid: u32) -> (String, String) {
 			CStr::from_bytes_with_nul(b"\0").unwrap()
 		}
 	};
-	return (
+	format!(
+		"{} {}",
 		String::from_utf8_lossy(usr.to_bytes()).to_string(),
-		String::from_utf8_lossy(grp.to_bytes()).to_string(),
-	);
+		String::from_utf8_lossy(grp.to_bytes()).to_string()
+	)
 }

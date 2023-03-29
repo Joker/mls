@@ -36,23 +36,25 @@ fn main() {
 
 	//
 
+	let mut name_max_width: usize = 0;
 	let mut file_list = match fs::read_dir(dir) {
 		Ok(list) => list
-			.filter_map(|x| file_info(&x.unwrap().path(), a, l, f))
+			.filter_map(|x| file_info(&x.unwrap().path(), a, l, f, &mut name_max_width))
 			.collect::<Vec<File>>(),
 		Err(e) => {
 			println!("{}", e);
 			return;
 		}
 	};
+
 	if file_list.len() == 0 {
 		println!(".   ..");
 		return;
 	}
 	if parser.found("S") {
-		file_list.sort_by_key(|f| (f.size, Reverse(f.dir)));
+		file_list.sort_by_key(|f| (Reverse(f.dir), f.size));
 	} else if parser.found("t") {
-		file_list.sort_by_key(|f| (f.time, Reverse(f.dir)));
+		file_list.sort_by_key(|f| (f.time));
 	} else {
 		file_list.sort_by_key(|f| (Reverse(f.dir), f.ext.clone(), f.sname.clone()));
 	}
@@ -60,7 +62,7 @@ fn main() {
 	//
 
 	if l {
-		println!("{}", display::list::to_string(&file_list, h));
+		println!("{}", display::list::to_string(&file_list, h, name_max_width));
 		return;
 	}
 	println!("{}", display::grid::to_string(&file_list));
