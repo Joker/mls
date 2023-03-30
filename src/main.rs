@@ -5,10 +5,9 @@ mod display;
 mod info;
 mod unsafelibc;
 
-use std::env;
-use std::fs;
-use std::{cmp::Reverse, path::Path};
+use std::{cmp::Reverse, env, fs, path::Path};
 
+use crate::color::{BLUE_L, WHITE};
 use crate::info::{file_info, File};
 
 use arguably::ArgParser;
@@ -83,27 +82,54 @@ fn main() {
 	let (fl, args) = args_init();
 
 	let mut standalone = Vec::new();
+	let mut folders = Vec::new();
+
 	let mut standalone_width: usize = 0;
-	for path in args {
-		let path = Path::new(&path);
-		if path.is_file() {
-			standalone.push(file_info(&path.to_path_buf(), &fl, &mut standalone_width))
-		}
-	}
-
 	let mut name_max_width: usize = 0;
-	let mut file_list = match fs::read_dir(".") {
-		Ok(list) => list
-			.filter_map(|x| file_info(&x.unwrap().path(), &fl, &mut name_max_width))
-			.collect::<Vec<File>>(),
-		Err(e) => {
-			return println!("{}", e);
-		}
-	};
 
-	if file_list.len() == 0 {
-		return println!(".   ..");
+	for st in args {
+		let path = Path::new(&st);
+		if path.is_file() {
+			match file_info(&path.to_path_buf(), &fl, &mut standalone_width) {
+				Some(f) => standalone.push(f),
+				None => (),
+			}
+		}
+		if path.is_dir() {
+			let file_list = match fs::read_dir(path) {
+				Ok(list) => list
+					.filter_map(|x| file_info(&x.unwrap().path(), &fl, &mut name_max_width))
+					.collect::<Vec<File>>(),
+				Err(e) => {
+					return println!("{}", e);
+				}
+			};
+			folders.push((Some(st), file_list));
+		}
 	}
+
+	let sl = standalone.len();
+	if sl > 0 {
+		file_vec_print(None, standalone, &fl, name_max_width)
+	}
+
+	if folders.len() == 1 && sl == 0 {
+		folders[0].0 = None;
+	}
+
+	for (title, folder) in folders {
+		file_vec_print(title, folder, &fl, name_max_width)
+	}
+}
+
+fn file_vec_print(title: Option<String>, mut file_list: Vec<File>, fl: &Flags, width: usize) {
+	if let Some(pt) = title {
+		println!("\n{WHITE}{pt}:")
+	}
+	if file_list.len() == 0 {
+		return println!("{BLUE_L}.   ..");
+	}
+
 	if fl.Size_sort {
 		file_list.sort_by_key(|f| (Reverse(f.dir), f.size));
 	} else if fl.time_sort {
@@ -112,10 +138,8 @@ fn main() {
 		file_list.sort_by_key(|f| (Reverse(f.dir), f.ext.clone(), f.sname.clone()));
 	}
 
-	//
-
 	if fl.long {
-		return display::list::print(&file_list, fl.human, name_max_width);
+		return display::list::print(&file_list, fl.human, width);
 	}
 	display::grid::print(&file_list);
 }

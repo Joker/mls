@@ -3,30 +3,26 @@ use std::os::unix::prelude::{MetadataExt, PermissionsExt};
 use std::path::{Path, PathBuf};
 use std::time::UNIX_EPOCH;
 
-use libc::S_IXUSR;
-
-use crate::color::{colorise, CYAN, RED, WHITE};
+use crate::color::{file_name_fmt, kind_fmt, permissions_fmt, CYAN, RED, WHITE};
 use crate::display::GRID_GAP;
 use crate::unsafelibc::username_group;
-use crate::Flag;
+use crate::Flags;
 
 #[derive(Clone, Debug)]
 pub struct File {
-	pub name: String,
 	pub sname: String,
+	pub name: String,
 	pub ext: String,
 	pub len: usize,
 	pub dir: bool,
+	pub lnk: bool,
 	pub size: u64,
 	pub time: u64,
-	pub md: Metadata,
-	// pub dot: bool,
-	// pub exe: bool,
-	pub lnk: bool,
 	pub user: Option<String>,
+	pub perm: Option<String>,
 }
 
-fn filename(path: &Path) -> String {
+pub fn filename(path: &Path) -> String {
 	match path.file_name() {
 		Some(name) => name.to_string_lossy().to_string(),
 		_ => path.display().to_string(),
@@ -65,7 +61,7 @@ fn ext_group(ext: String) -> (String, u8) {
 	}
 }
 
-fn time(md: &Metadata, fl: &Flag) -> u64 {
+fn time(md: &Metadata, fl: &Flags) -> u64 {
 	if fl.U_create {
 		match md.created().ok() {
 			Some(t) => match t.duration_since(UNIX_EPOCH) {
@@ -77,74 +73,74 @@ fn time(md: &Metadata, fl: &Flag) -> u64 {
 	} else if fl.u_access {
 		md.atime() as u64
 	} else if fl.ctime {
-		md.atime() as u64
+		md.ctime() as u64
 	} else {
 		md.mtime() as u64
 	}
 }
 
-pub fn file_info(path: &PathBuf, fl: &Flag, nlen: &mut usize) -> Option<File> {
+pub fn file_info(path: &PathBuf, fl: &Flags, nlen: &mut usize) -> Option<File> {
 	let sname = filename(path);
-	let len = sname.chars().count() + GRID_GAP;
 	let dot = sname.chars().next().unwrap() == '.';
 
-	let md = std::fs::symlink_metadata(path).unwrap();
-	let rwx = md.permissions().mode();
-	let lnk = md.is_symlink();
-	let time = time(&md, fl);
+	if !dot || fl.all {
+		let md = std::fs::symlink_metadata(path).unwrap();
 
-	let exe = rwx & S_IXUSR as u32 == S_IXUSR as u32;
-	let (ext, egrp) = ext_group(ext(path));
-	let mut dir = md.is_dir();
-	let mut name = colorise(&sname, &ext, egrp, dir, exe, lnk);
-	let size = match dir && !lnk {
-		false => md.size(),
-		true => {
-			let s = md.nlink();
-			if s < 3 {
-				0
-			} else {
-				s - 2
+		let mut dir = md.is_dir();
+		let lnk = md.is_symlink();
+		let rwx = md.permissions().mode();
+		let exe = rwx & 64 == 64; // let exe = rwx & S_IXUSR as u32 == S_IXUSR as u32;
+		let (ext, egrp) = ext_group(ext(path));
+		let mut name = file_name_fmt(&sname, &ext, egrp, dir, exe, lnk);
+
+		let size = match dir && !lnk {
+			true => match md.nlink() {
+				s if s < 3 => 0,
+				s => s - 2,
+			},
+			false => md.size(),
+		};
+
+		let user = fl.long.then(|| {
+			let uid_gid = username_group(md.uid(), md.gid());
+			if *nlen < uid_gid.len() {
+				*nlen = uid_gid.len()
+			}
+			uid_gid
+		});
+		let perm = fl
+			.long
+			.then(|| format!("{}{}", kind_fmt(lnk, dir, md.nlink()), permissions_fmt(rwx)));
+
+		if lnk {
+			let fname;
+			(fname, dir) = link_info(&path, fl.full);
+			if fl.long {
+				name.push_str(&fname);
 			}
 		}
-	};
-	let user = if fl.long {
-		let uid_gid = username_group(md.uid(), md.gid());
-		if *nlen < uid_gid.len() {
-			*nlen = uid_gid.len()
-		}
-		Some(uid_gid)
-	} else {
-		None
-	};
+		let len = sname.chars().count() + GRID_GAP;
 
-	if lnk {
-		let (fname, d) = read_lnk(&path, fl.full);
-		dir = d;
-		if fl.long {
-			name.push_str(&fname);
+		if fl.dir_only && !dir {
+			return None;
 		}
-	}
-
-	if dot && fl.all || !dot {
 		return Some(File {
-			name,
 			sname,
-			size,
-			time,
+			name,
 			ext,
 			len,
 			dir,
 			lnk,
-			md,
+			size,
+			time: time(&md, fl),
 			user,
+			perm,
 		});
 	}
-
 	return None;
 }
 
-fn read_lnk(pb: &PathBuf, abs: bool) -> (String, bool) {
+fn link_info(pb: &PathBuf, abs: bool) -> (String, bool) {
 	let path = match std::fs::read_link(pb) {
 		Ok(lnk) => lnk,
 		Err(_) => return (String::from("link error"), false),
@@ -162,7 +158,7 @@ fn read_lnk(pb: &PathBuf, abs: bool) -> (String, bool) {
 	}
 
 	let (ext, egrp) = ext_group(ext(&path));
-	let exe = rwx & S_IXUSR as u32 == S_IXUSR as u32;
+	let exe = rwx & 64 == 64;
 
 	let path_to = if abs {
 		match std::fs::canonicalize(&path) {
@@ -175,7 +171,7 @@ fn read_lnk(pb: &PathBuf, abs: bool) -> (String, bool) {
 	(
 		format!(
 			"{WHITE} -> {CYAN}{path_to}{}",
-			colorise(&name, &ext, egrp, dir, exe, false)
+			file_name_fmt(&name, &ext, egrp, dir, exe, false)
 		),
 		dir,
 	)
