@@ -3,18 +3,18 @@ use std::usize;
 use super::{spaces, GRID_GAP};
 use crate::{unsafelibc::terminal_size, File};
 
-fn width_sizes(names: &Vec<File>, stack_size: usize) -> (usize, Vec<usize>) {
+fn width_sizes(files: &Vec<File>, stack_size: usize) -> (usize, Vec<usize>) {
 	let mut col_sizes = Vec::new();
 	let mut count = 0;
 	let mut maximum = 0;
 
-	for n in names {
+	for f in files {
 		if count == stack_size {
 			col_sizes.push(maximum);
 			maximum = 0;
 			count = 0;
 		}
-		maximum = if n.len > maximum { n.len } else { maximum };
+		maximum = if f.len > maximum { f.len } else { maximum };
 		count += 1;
 	}
 	if maximum > 0 {
@@ -59,15 +59,18 @@ fn grid_size(names: &Vec<File>) -> (usize, Vec<usize>) {
 	}
 }
 
-pub fn to_string(files: &Vec<File>) -> String {
+pub fn print(files: &Vec<File>) {
 	let (stack, column_sizes) = grid_size(files);
 
 	if stack == 1 {
-		return files
-			.iter()
-			.map(|x| x.name.as_str())
-			.collect::<Vec<_>>()
-			.join(&spaces(GRID_GAP));
+		return println!(
+			"{}",
+			files
+				.iter()
+				.map(|x| x.name.as_str())
+				.collect::<Vec<_>>()
+				.join(&spaces(GRID_GAP))
+		);
 	}
 
 	let mut str_vec: Vec<String> = Vec::with_capacity(stack);
@@ -84,5 +87,5 @@ pub fn to_string(files: &Vec<File>) -> String {
 		}
 	}
 
-	str_vec.join("\n")
+	println!("{}", str_vec.join("\n"))
 }
