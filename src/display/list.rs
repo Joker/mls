@@ -1,28 +1,27 @@
-use std::os::unix::prelude::{MetadataExt, PermissionsExt};
-
 use super::spaces;
-use crate::color::{permissions_fmt, BLACK_H, BLACK_L, BLUE_L, CYAN, MAGENTA, WHITE};
+use crate::color::{BLACK_H, BLACK_L, WHITE};
 use crate::datetime::date_time_fmt;
-use crate::display::{SIZE_WIDTH, TIMEZONE};
+use crate::display::{FSIZE_WIDTH, TIMEZONE};
 use crate::{color::size_fmt, info::File};
 
-pub fn to_string(files: &Vec<File>, unreadable: bool, name_width: usize) -> String {
-	files
-		.iter()
-		.map(|f| line_fmt(f, unreadable, name_width))
-		.collect::<Vec<_>>()
-		.join("\n")
+pub fn print(files: &Vec<File>, unreadable: bool, name_width: usize) {
+	println!(
+		"{}",
+		files
+			.iter()
+			.map(|f| line_fmt(f, unreadable, name_width))
+			.collect::<Vec<_>>()
+			.join("\n")
+	)
 }
 
 fn line_fmt(f: &File, unreadable: bool, name_width: usize) -> String {
-	let username_group = match &f.user {
-		Some(u) => u,
-		None => "",
-	};
+	let username_group = if let Some(u) = &f.user { u } else { "" };
+	let perm = if let Some(u) = &f.perm { u } else { "" };
+
 	format!(
-		"{WHITE}{}{} {WHITE}{: >ncv$} {}  {}  {}  ",
-		kind(f),
-		permissions_fmt(f.md.permissions().mode()),
+		"{WHITE}{} {WHITE}{: >ncv$} {}  {}  {}  ",
+		perm,
 		username_group,
 		date_time_fmt(f.time + TIMEZONE),
 		file_size(f, unreadable),
@@ -31,42 +30,26 @@ fn line_fmt(f: &File, unreadable: bool, name_width: usize) -> String {
 	)
 }
 
-fn kind(f: &File) -> String {
-	if f.lnk {
-		return format!("{CYAN}l");
-	}
-	if f.dir {
-		return format!("{BLUE_L}d");
-	}
-	match f.md.nlink() {
-		n if n > 9 => return format!("{MAGENTA}*"),
-		n if n > 1 => return format!("{MAGENTA}{n}"),
-		_ => return String::from(" "),
-	}
-}
-
-fn file_size(f: &File, unreadable: bool) -> String {
-	const UNRDB_WIDTH: usize = 11;
+fn file_size(f: &File, bitsize: bool) -> String {
+	const BIT_WIDTH: usize = 11;
 	if f.dir && (f.lnk || f.size == 0) {
-		return format!(
-			"{BLACK_H}{}-",
-			spaces(if unreadable {
-				UNRDB_WIDTH - 1
-			} else {
-				SIZE_WIDTH - 1
-			})
-		);
+		let gap = if bitsize {
+			BIT_WIDTH - 1
+		} else {
+			FSIZE_WIDTH - 1
+		};
+		return format!("{BLACK_H}{}-", spaces(gap));
 	}
 	if f.dir {
-		let sp = match unreadable {
-			true => spaces(UNRDB_WIDTH - 5),
+		let sp = match bitsize {
+			true => spaces(BIT_WIDTH - 5),
 			false => "".to_string(),
 		};
 		return format!("{WHITE}{sp}{: >4}{BLACK_L}f", f.size);
 	}
-	if unreadable {
+	if bitsize {
 		let spc = f.size.to_string().len();
-		return format!("{WHITE}{}{}", spaces(UNRDB_WIDTH - spc), f.size);
+		return format!("{WHITE}{}{}", spaces(BIT_WIDTH - spc), f.size);
 	}
 	size_fmt(f.size)
 }
