@@ -29,6 +29,15 @@ pub fn filename(path: &Path) -> String {
 	}
 }
 
+pub fn basepath(path: &Path) -> String {
+	let mut an = path.ancestors();
+	an.next();
+	match an.next() {
+		Some(p) => p.to_string_lossy().to_string(),
+		_ => "".to_string(),
+	}
+}
+
 fn ext(path: &Path) -> String {
 	match path.extension() {
 		Some(ext) => ext.to_string_lossy().to_lowercase(),

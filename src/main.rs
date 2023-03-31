@@ -7,8 +7,8 @@ mod unsafelibc;
 
 use std::{cmp::Reverse, env, fs, path::Path};
 
-use crate::color::{BLUE_L, WHITE};
-use crate::info::{file_info, File};
+use crate::color::{BLUE_L, RED, WHITE};
+use crate::info::{basepath, file_info, File};
 
 use arguably::ArgParser;
 
@@ -88,23 +88,28 @@ fn main() {
 	let mut name_max_width: usize = 0;
 
 	for st in args {
-		let path = Path::new(&st);
-		if path.is_file() {
-			match file_info(&path.to_path_buf(), &fl, &mut standalone_width) {
-				Some(f) => standalone.push(f),
-				None => (),
-			}
-		}
-		if path.is_dir() {
-			let file_list = match fs::read_dir(path) {
-				Ok(list) => list
-					.filter_map(|x| file_info(&x.unwrap().path(), &fl, &mut name_max_width))
-					.collect::<Vec<File>>(),
-				Err(e) => {
-					return println!("{}", e);
+		match Path::new(&st) {
+			path if path.is_file() => {
+				match file_info(&path.to_path_buf(), &fl, &mut standalone_width) {
+					Some(mut f) => {
+						f.name = format!("{WHITE}{}/{}", basepath(path), f.name);
+						standalone.push(f)
+					}
+					None => (),
 				}
-			};
-			folders.push((Some(st), file_list));
+			}
+			path if path.is_dir() => {
+				let file_list = match fs::read_dir(path) {
+					Ok(list) => list
+						.filter_map(|x| file_info(&x.unwrap().path(), &fl, &mut name_max_width))
+						.collect::<Vec<File>>(),
+					Err(e) => {
+						return println!("{}", e);
+					}
+				};
+				folders.push((Some(st), file_list));
+			}
+			_ => println!("{RED}{st}{WHITE}: No such file or directory\n"),
 		}
 	}
 
