@@ -1,5 +1,3 @@
-use crate::display::{spaces, FSIZE_WIDTH};
-
 // pub static BLACK: &str = "\x1b[0;30m";
 pub static RED: &str = "\x1b[0;31m";
 pub static GREEN: &str = "\x1b[0;32m";
@@ -57,39 +55,6 @@ pub fn file_name_fmt(name: &str, ext: &str, egrp: u8, dir: bool, exe: bool, lnk:
 	return format!("{color}{name}");
 }
 
-const KB: f64 = 1024.0;
-fn short_size(bytes: f64) -> String {
-	let base = bytes.log10() / KB.log10();
-	let ans = KB.powf(base - base.floor());
-	if ans < 100.0 {
-		return format!("{:.1}", ans).trim_end_matches(".0").to_owned();
-	}
-	format!("{:.0}", ans)
-}
-
-fn color_size(size: String, suffix: &str) -> String {
-	let sp = spaces(FSIZE_WIDTH - size.len() - suffix.len());
-	format!("{GREEN_L}{sp}{size}{GREEN}{suffix}")
-}
-
-pub fn size_fmt(bytes: u64) -> String {
-	match bytes {
-		bt if bt >= 1073741824 => color_size(short_size(bt as f64), "G"),
-		bt if bt >= 1048576 => color_size(short_size(bt as f64), "M"),
-		bt if bt >= 1024 => color_size(short_size(bt as f64), "k"),
-		bt if bt >= 1 => color_size(bt.to_string(), ""),
-		_ => format!("{GREEN_L}{}0{GREEN}", spaces(FSIZE_WIDTH - 1)),
-	}
-}
-
-fn bits(rwx: u32, n: u8) -> Vec<bool> {
-	let mut v = (0..n)
-		.map(|n| if (rwx >> n) & 1 == 1 { true } else { false })
-		.collect::<Vec<bool>>();
-	v.reverse();
-	v
-}
-
 pub fn kind_fmt(lnk: bool, dir: bool, nlink: u64) -> String {
 	if lnk {
 		return format!("{CYAN}l");
@@ -102,6 +67,14 @@ pub fn kind_fmt(lnk: bool, dir: bool, nlink: u64) -> String {
 		n if n > 1 => return format!("{MAGENTA}{n}"),
 		_ => return String::from(" "),
 	}
+}
+
+fn bits(rwx: u32, n: u8) -> Vec<bool> {
+	let mut v = (0..n)
+		.map(|n| if (rwx >> n) & 1 == 1 { true } else { false })
+		.collect::<Vec<bool>>();
+	v.reverse();
+	v
 }
 
 pub fn permissions_fmt(rwx: u32) -> String {

@@ -23,6 +23,11 @@ pub struct Flags {
 	pub u_access: bool,
 	pub U_create: bool,
 	pub dir_only: bool,
+	pub group: bool,
+}
+pub struct Width {
+	pub uid: usize,
+	pub gid: usize,
 }
 
 fn args_init() -> (Flags, Vec<String>) {
@@ -40,6 +45,7 @@ fn args_init() -> (Flags, Vec<String>) {
 		.flag("c")
 		.flag("u")
 		.flag("U")
+		.flag("g")
 		.flag("d");
 	if let Err(err) = parser.parse() {
 		err.exit();
@@ -55,6 +61,7 @@ fn args_init() -> (Flags, Vec<String>) {
 		u_access: parser.found("u"),
 		U_create: parser.found("U"),
 		dir_only: parser.found("d"),
+		group: parser.found("g"),
 	};
 	match args[0].rsplit("/").next() {
 		Some(p) => match p {
@@ -84,13 +91,13 @@ fn main() {
 	let mut standalone = Vec::new();
 	let mut folders = Vec::new();
 
-	let mut standalone_width: usize = 0;
-	let mut name_max_width: usize = 0;
+	let mut s_width = Width { uid: 0, gid: 0 };
+	let mut f_width = Width { uid: 0, gid: 0 };
 
 	for st in args {
 		match Path::new(&st) {
 			path if path.is_file() => {
-				match file_info(&path.to_path_buf(), &fl, &mut standalone_width) {
+				match file_info(&path.to_path_buf(), &fl, &mut s_width) {
 					Some(mut f) => {
 						f.name = format!("{WHITE}{}/{}", basepath(path), f.name);
 						standalone.push(f)
@@ -101,7 +108,7 @@ fn main() {
 			path if path.is_dir() => {
 				let file_list = match fs::read_dir(path) {
 					Ok(list) => list
-						.filter_map(|x| file_info(&x.unwrap().path(), &fl, &mut name_max_width))
+						.filter_map(|x| file_info(&x.unwrap().path(), &fl, &mut f_width))
 						.collect::<Vec<File>>(),
 					Err(e) => {
 						return println!("{}", e);
@@ -115,7 +122,7 @@ fn main() {
 
 	let sl = standalone.len();
 	if sl > 0 {
-		file_vec_print(None, standalone, &fl, name_max_width)
+		file_vec_print(None, standalone, &fl, &f_width)
 	}
 
 	if folders.len() == 1 && sl == 0 {
@@ -123,11 +130,11 @@ fn main() {
 	}
 
 	for (title, folder) in folders {
-		file_vec_print(title, folder, &fl, name_max_width)
+		file_vec_print(title, folder, &fl, &f_width)
 	}
 }
 
-fn file_vec_print(title: Option<String>, mut file_list: Vec<File>, fl: &Flags, width: usize) {
+fn file_vec_print(title: Option<String>, mut file_list: Vec<File>, fl: &Flags, w: &Width) {
 	if let Some(pt) = title {
 		println!("\n{WHITE}{pt}:")
 	}
@@ -144,7 +151,7 @@ fn file_vec_print(title: Option<String>, mut file_list: Vec<File>, fl: &Flags, w
 	}
 
 	if fl.long {
-		return display::list::print(&file_list, fl.human, width);
+		return display::list::print(&file_list, fl, w);
 	}
 	display::grid::print(&file_list);
 }

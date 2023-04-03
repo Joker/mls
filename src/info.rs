@@ -4,9 +4,10 @@ use std::path::{Path, PathBuf};
 use std::time::UNIX_EPOCH;
 
 use crate::color::{file_name_fmt, kind_fmt, permissions_fmt, CYAN, RED, WHITE};
+use crate::display::list::file_size;
 use crate::display::GRID_GAP;
 use crate::unsafelibc::username_group;
-use crate::Flags;
+use crate::{Flags, Width};
 
 #[derive(Clone, Debug)]
 pub struct File {
@@ -15,11 +16,17 @@ pub struct File {
 	pub ext: String,
 	pub len: usize,
 	pub dir: bool,
-	pub lnk: bool,
 	pub size: u64,
 	pub time: u64,
-	pub user: Option<String>,
-	pub perm: Option<String>,
+	pub long: Option<FileLine>,
+}
+
+#[derive(Clone, Debug)]
+pub struct FileLine {
+	pub user: String,
+	pub group: String,
+	pub perm: String,
+	pub size: String,
 }
 
 pub fn filename(path: &Path) -> String {
@@ -88,7 +95,7 @@ fn time(md: &Metadata, fl: &Flags) -> u64 {
 	}
 }
 
-pub fn file_info(path: &PathBuf, fl: &Flags, nlen: &mut usize) -> Option<File> {
+pub fn file_info(path: &PathBuf, fl: &Flags, wh: &mut Width) -> Option<File> {
 	let sname = filename(path);
 	let dot = sname.chars().next().unwrap() == '.';
 
@@ -110,16 +117,7 @@ pub fn file_info(path: &PathBuf, fl: &Flags, nlen: &mut usize) -> Option<File> {
 			false => md.size(),
 		};
 
-		let user = fl.long.then(|| {
-			let uid_gid = username_group(md.uid(), md.gid());
-			if *nlen < uid_gid.len() {
-				*nlen = uid_gid.len()
-			}
-			uid_gid
-		});
-		let perm = fl
-			.long
-			.then(|| format!("{}{}", kind_fmt(lnk, dir, md.nlink()), permissions_fmt(rwx)));
+		let long = fl.long.then(|| line_info(&md, fl, wh, lnk, dir, size, rwx));
 
 		if lnk {
 			let fname;
@@ -139,11 +137,9 @@ pub fn file_info(path: &PathBuf, fl: &Flags, nlen: &mut usize) -> Option<File> {
 			ext,
 			len,
 			dir,
-			lnk,
 			size,
 			time: time(&md, fl),
-			user,
-			perm,
+			long,
 		});
 	}
 	return None;
@@ -184,4 +180,32 @@ fn link_info(pb: &PathBuf, abs: bool) -> (String, bool) {
 		),
 		dir,
 	)
+}
+
+fn line_info(
+	md: &Metadata,
+	fl: &Flags,
+	wh: &mut Width,
+	dir: bool,
+	lnk: bool,
+	sz: u64,
+	rwx: u32,
+) -> FileLine {
+	let (user, mut group) = username_group(md.uid(), md.gid());
+	if wh.uid < user.len() {
+		wh.uid = user.len()
+	}
+
+	if !fl.group {
+		group = "".to_string();
+	} else if wh.gid < group.len() {
+		wh.gid = group.len()
+	}
+
+	FileLine {
+		user,
+		group,
+		perm: format!("{}{}", kind_fmt(lnk, dir, md.nlink()), permissions_fmt(rwx)),
+		size: file_size(sz, dir, lnk, fl.human),
+	}
 }
