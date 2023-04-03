@@ -3,14 +3,16 @@ mod color;
 mod datetime;
 mod display;
 mod info;
+mod fileinfo;
 mod unsafelibc;
 
 use std::{cmp::Reverse, env, fs, path::Path};
 
 use crate::color::{BLUE_L, RED, WHITE};
-use crate::info::{basepath, file_info, File};
+use crate::fileinfo::basepath;
 
 use arguably::ArgParser;
+use info::{file_info, File};
 
 pub struct Flags {
 	pub all: bool,
@@ -96,15 +98,13 @@ fn main() {
 
 	for st in args {
 		match Path::new(&st) {
-			path if path.is_file() => {
-				match file_info(&path.to_path_buf(), &fl, &mut s_width) {
-					Some(mut f) => {
-						f.name = format!("{WHITE}{}/{}", basepath(path), f.name);
-						standalone.push(f)
-					}
-					None => (),
+			path if path.is_file() => match file_info(&path.to_path_buf(), &fl, &mut s_width) {
+				Some(mut f) => {
+					f.name = format!("{WHITE}{}/{}", basepath(path), f.name);
+					standalone.push(f)
 				}
-			}
+				None => (),
+			},
 			path if path.is_dir() => {
 				let file_list = match fs::read_dir(path) {
 					Ok(list) => list
