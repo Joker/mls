@@ -16,22 +16,22 @@ pub struct File {
 	pub ext: String,
 	pub len: usize,
 	pub dir: bool,
-	pub size: u64,
-	pub time: u64,
 	pub long: Option<FileLine>,
 }
 
 #[derive(Clone, Debug)]
 pub struct FileLine {
+	pub size: u64,
+	pub time: u64,
 	pub user: String,
 	pub group: String,
 	pub perm: String,
-	pub size: String,
+	pub str_size: String,
 	pub suf: String,
 	pub lnk: bool,
 }
 
-fn f_info(path: &PathBuf, sname: String, _wh: &mut Width, fl: &Flags) -> File {
+fn f_info(path: &PathBuf, sname: String) -> File {
 	let md = std::fs::symlink_metadata(path).unwrap();
 
 	let lnk = md.is_symlink();
@@ -43,7 +43,7 @@ fn f_info(path: &PathBuf, sname: String, _wh: &mut Width, fl: &Flags) -> File {
 
 	if lnk {
 		let nvalid;
-		(_, _, dir, nvalid) = link(&path);
+		(_, _, _, dir, nvalid) = link(&path);
 		if nvalid {
 			name = format!("{RED}{sname}");
 		}
@@ -54,8 +54,6 @@ fn f_info(path: &PathBuf, sname: String, _wh: &mut Width, fl: &Flags) -> File {
 		ext,
 		len,
 		dir,
-		size: if dir { 0 } else { md.size() },
-		time: time(&md, fl),
 		long: None,
 	};
 }
@@ -105,9 +103,7 @@ fn l_info(path: &PathBuf, sname: String, wh: &mut Width, fl: &Flags) -> File {
 	if lnk {
 		let fname;
 		(fname, dir) = link_line(&path, fl.full);
-		if fl.long {
-			name.push_str(&fname);
-		}
+		name.push_str(&fname);
 	}
 	let len = sname.chars().count() + GRID_GAP;
 
@@ -117,13 +113,13 @@ fn l_info(path: &PathBuf, sname: String, wh: &mut Width, fl: &Flags) -> File {
 		ext,
 		len,
 		dir,
-		size,
-		time: time(&md, fl),
 		long: Some(FileLine {
+			size,
+			time: time(&md, fl),
 			user,
 			group,
 			perm: format!("{}{}", kind_fmt(lnk, dir, md.nlink()), permissions_fmt(rwx)),
-			size: str_size,
+			str_size,
 			suf,
 			lnk,
 		}),
@@ -135,9 +131,9 @@ pub fn file_info(path: &PathBuf, fl: &Flags, wh: &mut Width) -> Option<File> {
 	let dot = sname.chars().next().unwrap() == '.';
 
 	if !dot || fl.all {
-		let file = match fl.long {
+		let file = match fl.long || fl.Size_sort || fl.time_sort || fl.group {
 			true => l_info(path, sname, wh, fl),
-			false => f_info(path, sname, wh, fl),
+			false => f_info(path, sname),
 		};
 
 		if fl.dir_only && !file.dir {

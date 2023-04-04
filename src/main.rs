@@ -2,8 +2,8 @@
 mod color;
 mod datetime;
 mod display;
-mod info;
 mod fileinfo;
+mod info;
 mod unsafelibc;
 
 use std::{cmp::Reverse, env, fs, path::Path};
@@ -26,6 +26,9 @@ pub struct Flags {
 	pub U_create: bool,
 	pub dir_only: bool,
 	pub group: bool,
+	pub tree2: bool,
+	pub tree3: bool,
+	pub tree0: bool,
 }
 pub struct Width {
 	pub uid: usize,
@@ -37,7 +40,26 @@ fn args_init() -> (Flags, Vec<String>) {
 	let args: Vec<String> = env::args().collect();
 
 	let mut parser = ArgParser::new()
-		.helptext("Usage: mls")
+		.helptext(
+			r#"USAGE:
+	ls [-alStfhcuUgd] [file ...]
+OPTIONS:
+	-a   Include directory entries whose names begin with a dot (`.`).
+	-l   List files in the long format.
+	-S   Sort by size.
+	-t   Sort by time.
+	-f   Symbolic link absolute path.
+	-h   Size in bytes.
+	-c   Use time when file status was last changed.
+	-u   Use time of last access, instead of time of last modification of the file.
+	-U   Use time when file was created.
+	-g   Display the group name.
+	-d   Display directories only.
+	-2
+	-3
+	-0
+	"#,
+		)
 		.version("1.0")
 		.flag("a")
 		.flag("l")
@@ -49,7 +71,11 @@ fn args_init() -> (Flags, Vec<String>) {
 		.flag("u")
 		.flag("U")
 		.flag("g")
-		.flag("d");
+		.flag("d")
+		.flag("2")
+		.flag("3")
+		.flag("0");
+
 	if let Err(err) = parser.parse() {
 		err.exit();
 	}
@@ -65,6 +91,9 @@ fn args_init() -> (Flags, Vec<String>) {
 		U_create: parser.found("U"),
 		dir_only: parser.found("d"),
 		group: parser.found("g"),
+		tree2: parser.found("2"),
+		tree3: parser.found("3"),
+		tree0: parser.found("0"),
 	};
 	match args[0].rsplit("/").next() {
 		Some(p) => match p {
@@ -94,8 +123,16 @@ fn main() {
 	let mut standalone = Vec::new();
 	let mut folders = Vec::new();
 
-	let mut s_width = Width { uid: 0, gid: 0, szn: 0 };
-	let mut f_width = Width { uid: 0, gid: 0, szn: 0 };
+	let mut s_width = Width {
+		uid: 0,
+		gid: 0,
+		szn: 0,
+	};
+	let mut f_width = Width {
+		uid: 0,
+		gid: 0,
+		szn: 0,
+	};
 
 	for st in args {
 		match Path::new(&st) {
@@ -107,6 +144,7 @@ fn main() {
 				None => (),
 			},
 			path if path.is_dir() => {
+				// env::set_current_dir(path).unwrap();
 				let file_list = match fs::read_dir(path) {
 					Ok(list) => list
 						.filter_map(|x| file_info(&x.unwrap().path(), &fl, &mut f_width))
@@ -139,19 +177,22 @@ fn file_vec_print(title: Option<String>, mut file_list: Vec<File>, fl: &Flags, w
 	if let Some(pt) = title {
 		println!("\n{WHITE}{pt}:")
 	}
+
 	if file_list.len() == 0 {
 		return println!("{BLUE_L}.   ..");
 	}
-
 	if fl.Size_sort {
-		file_list.sort_by_key(|f| (Reverse(f.dir), f.size));
-	} else if fl.time_sort {
-		file_list.sort_by_key(|f| (f.time));
-	} else {
-		file_list.sort_by_key(|f| (Reverse(f.dir), f.ext.clone(), f.sname.clone()));
+		file_list.sort_by_key(|f| (Reverse(f.dir), f.long.as_ref().unwrap().size));
+		return display::list::print(&file_list, fl, w);
+	}
+	if fl.time_sort {
+		file_list.sort_by_key(|f| (f.long.as_ref().unwrap().time));
+		return display::list::print(&file_list, fl, w);
 	}
 
-	if fl.long {
+	file_list.sort_by_key(|f| (Reverse(f.dir), f.ext.clone(), f.sname.clone()));
+
+	if fl.long || fl.group {
 		return display::list::print(&file_list, fl, w);
 	}
 	display::grid::print(&file_list);

@@ -4,8 +4,8 @@ use std::path::{Path, PathBuf};
 use std::time::UNIX_EPOCH;
 
 use crate::color::{file_name_fmt, CYAN, RED, WHITE};
-use crate::Flags;
 use crate::info::USEREXE;
+use crate::Flags;
 
 pub fn filename(path: &Path) -> String {
 	match path.file_name() {
@@ -15,9 +15,7 @@ pub fn filename(path: &Path) -> String {
 }
 
 pub fn basepath(path: &Path) -> String {
-	let mut an = path.ancestors();
-	an.next();
-	match an.next() {
+	match path.parent() {
 		Some(p) => p.to_string_lossy().to_string(),
 		_ => "".to_string(),
 	}
@@ -73,45 +71,54 @@ pub fn time(md: &Metadata, fl: &Flags) -> u64 {
 	}
 }
 
-pub fn link(pb: &PathBuf) -> (PathBuf, bool, bool, bool) {
+pub fn link(pb: &PathBuf) -> (PathBuf, PathBuf, bool, bool, bool) {
 	let mut path = PathBuf::new();
+	let mut pb_path = PathBuf::new();
 	let mut nvalid = false;
 	let mut dir = false;
 	let mut exe = false;
 	match std::fs::read_link(pb) {
-		Ok(p) => match std::fs::metadata(&p) {
-			Ok(metadata) => {
-				dir = metadata.is_dir();
-				exe = metadata.permissions().mode() & USEREXE == USEREXE;
-				path = p;
+		Ok(p) => {
+			pb_path = if p.is_relative() {
+				PathBuf::from(format!("{}/{}", basepath(pb), p.to_string_lossy()))
+			} else {
+				p.clone()
+			};
+			path = p;
+			match std::fs::metadata(&pb_path) {
+				Ok(metadata) => {
+					dir = metadata.is_dir();
+					exe = metadata.permissions().mode() & USEREXE == USEREXE;
+				}
+				Err(_) => nvalid = true,
 			}
-			Err(_) => nvalid = true,
-		},
+		}
 		Err(_) => nvalid = true,
 	};
-	(path, exe, dir, nvalid)
+	(path, pb_path, exe, dir, nvalid)
 }
 
 pub fn link_line(pb: &PathBuf, abs: bool) -> (String, bool) {
-	let (path, exe, dir, nvalid) = link(pb);
+	let (path, pb_path, exe, dir, nvalid) = link(pb);
+
 	if nvalid {
-		return (format!("{RED} -> {}", pb.to_string_lossy()), false);
+		return (format!("{RED} -> {}", path.to_string_lossy()), false);
 	}
 
 	let (ext, egrp) = ext_group(ext(&path));
 	let name = filename(&path);
 
 	let path_to = if abs {
-		match std::fs::canonicalize(&path) {
-			Ok(s) => s.to_string_lossy().replace(&name, ""),
-			Err(_) => path.to_string_lossy().replace(&name, ""),
+		match std::fs::canonicalize(&pb_path) {
+			Ok(s) => basepath(s.as_path()),
+			Err(_) => basepath(path.as_path()),
 		}
 	} else {
-		path.to_string_lossy().replace(&name, "")
+		basepath(path.as_path())
 	};
 	(
 		format!(
-			"{WHITE} -> {CYAN}{path_to}{}",
+			"{WHITE} -> {CYAN}{path_to}/{}",
 			file_name_fmt(&name, &ext, egrp, dir, exe, false)
 		),
 		dir,

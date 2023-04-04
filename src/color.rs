@@ -23,7 +23,9 @@ pub static MAGENTA_L: &str = "\x1b[0;95m";
 // pub static CYAN_L: &str = "\x1b[0;96m";
 // pub static WHITE_L: &str = "\x1b[0;97m";
 pub static XT22: &str = "\x1b[38;5;22m";
+pub static XT23: &str = "\x1b[38;5;23m";
 pub static XT36: &str = "\x1b[38;5;36m";
+pub static XT42: &str = "\x1b[38;5;42m";
 
 pub fn file_name_fmt(name: &str, ext: &str, egrp: u8, dir: bool, exe: bool, lnk: bool) -> String {
 	if lnk {

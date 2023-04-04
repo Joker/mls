@@ -1,4 +1,4 @@
-use crate::color::{BLACK_H, BLACK_L, GREEN, GREEN_L, WHITE};
+use crate::color::{BLACK_H, BLACK_L, GREEN, WHITE, XT23, XT42};
 use crate::datetime::date_time_fmt;
 use crate::display::TIMEZONE;
 use crate::info::File;
@@ -22,7 +22,7 @@ fn line_fmt(f: &File, fl: &Flags, w: &Width) -> String {
 			l.perm,
 			l.user,
 			l.group,
-			date_time_fmt(f.time + TIMEZONE),
+			date_time_fmt(f.long.as_ref().unwrap().time + TIMEZONE),
 			size_fmt(f, w, fl.human),
 			f.name,
 			ncu = w.uid + 1,
@@ -34,24 +34,29 @@ fn line_fmt(f: &File, fl: &Flags, w: &Width) -> String {
 
 pub fn size_fmt(f: &File, w: &Width, bitsize: bool) -> String {
 	let line = f.long.as_ref().unwrap();
-	if f.dir && (line.lnk || f.size == 0) {
+	if f.dir && (line.lnk || line.size == 0) {
 		return format!("{BLACK_H}{: >nsz$}", "-", nsz = w.szn);
 	}
 	if f.dir {
-		return format!("{WHITE}{: >nsz$}{BLACK_L}f", f.size, nsz = w.szn - 1);
+		return format!("{WHITE}{: >nsz$}{BLACK_L}f", line.size, nsz = w.szn - 1);
 	}
 	if bitsize {
-		return format!("{WHITE}{: >nsz$}", f.size, nsz = w.szn);
+		return format!("{WHITE}{: >nsz$}", line.size, nsz = w.szn);
 	}
-	if line.suf.len() > 0 {
-		format!(
-			"{GREEN}{: >nsz$}{GREEN_L}{}",
-			line.size,
+	match line.suf.as_str() {
+		"M" | "G" => format!(
+			"{XT42}{: >nsz$}{XT23}{}",
+			line.str_size,
 			line.suf,
 			nsz = w.szn - 1
-		)
-	} else {
-		format!("{GREEN}{: >nsz$}", line.size, nsz = w.szn)
+		),
+		"k" => format!(
+			"{GREEN}{: >nsz$}{XT23}{}",
+			line.str_size,
+			line.suf,
+			nsz = w.szn - 1
+		),
+		_ => format!("{GREEN}{: >nsz$}", line.str_size, nsz = w.szn),
 	}
 }
 
