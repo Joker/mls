@@ -1,6 +1,9 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::display::TIMEZONE;
+use crate::{
+	color::{DAY1, DAY2, WEK1, WEK4, YEAR},
+	display::TIMEZONE,
+};
 
 pub fn date_time_fmt(unix_time: u64) -> String {
 	let now = SystemTime::now()
@@ -14,13 +17,21 @@ pub fn date_time_fmt(unix_time: u64) -> String {
 	let month_name = [
 		"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 	];
+	let cl = match unix_time {
+		ut if ut > now - 86400 => DAY1,
+		ut if ut > now - 172800 => DAY2,
+		ut if ut > now - 604800 => WEK1,
+		ut if ut > now - 2419200 => WEK4,
+		_ => YEAR,
+	};
 	if unix_time > now - 15768000 {
 		return format!(
-			"{: >2} {} {:0>2}:{:0>2}",
-			date, month_name[month], hours, minutes,
+			"{}{: >2} {} {:0>2}:{:0>2}",
+			cl, date, month_name[month], hours, minutes,
 		);
 	}
-	format!("{: >2} {}  {}", date, month_name[month], year,)
+
+	format!("{}{: >2} {}  {}", cl, date, month_name[month], year,)
 }
 
 // https://stackoverflow.com/questions/11188621/how-can-i-convert-seconds-since-the-epoch-to-hours-minutes-seconds-in-java/11197532#11197532

@@ -27,6 +27,17 @@ pub static XT23: &str = "\x1b[38;5;23m";
 pub static XT36: &str = "\x1b[38;5;36m";
 pub static XT42: &str = "\x1b[38;5;42m";
 
+pub static DAY1: &str = "\x1b[38;5;179m";
+pub static DAY2: &str = "\x1b[38;5;180m";
+pub static WEK1: &str = "\x1b[38;5;181m";
+pub static WEK4: &str = "\x1b[38;5;186m";
+pub static YEAR: &str = "\x1b[38;5;187m";
+// pub static DAY1: &str = "\x1b[38;5;189m";
+// pub static DAY2: &str = "\x1b[38;5;188m";
+// pub static WEK1: &str = "\x1b[38;5;187m";
+// pub static WEK4: &str = "\x1b[38;5;186m";
+// pub static YEAR: &str = "\x1b[38;5;185m";
+
 pub fn file_name_fmt(name: &str, ext: &str, egrp: u8, dir: bool, exe: bool, lnk: bool) -> String {
 	if lnk {
 		return format!("{CYAN}{name}");
@@ -91,6 +102,15 @@ pub fn permissions_fmt(rwx: u32) -> String {
 		format!("{YELLOW}r"),
 		format!("{RED}w"),
 		format!("{GREEN}x"),
+		// format!("{GREEN}r"),
+		// format!("{YELLOW}w"),
+		// format!("{RED}x"),
+		// format!("{GREEN}r"),
+		// format!("{YELLOW}w"),
+		// format!("{RED}x"),
+		// format!("{GREEN}r"),
+		// format!("{YELLOW}w"),
+		// format!("{RED}x"),
 	];
 	for (i, one) in bits(rwx, 9).iter().enumerate() {
 		if *one {

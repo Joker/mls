@@ -103,6 +103,7 @@ OPTIONS:
 				fl.all = true;
 			}
 			"ll" => fl.long = true,
+			"lt" => fl.tree2 = true,
 			"lsd" => fl.dir_only = true,
 			_ => (),
 		},

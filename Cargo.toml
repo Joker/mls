@@ -1,9 +1,19 @@
 [package]
 name = "mls"
 version = "0.1.0"
+authors = ["Joker <nice.way@live.com>"]
+description = "ls"
+repository = "https://github.com/Joker/mls"
+keywords = ["ls", "terminal", "color"]
+exclude = ["target", "Cargo.lock"]
 edition = "2021"
 
 
 [dependencies]
 arguably = "2.2.0"
 libc = "0.2.*"
+
+[profile.release]
+strip = true
+panic = "abort"
+lto = true
