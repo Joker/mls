@@ -1,7 +1,6 @@
 pub mod grid;
 pub mod list;
 
-pub const FSIZE_WIDTH: usize = 5;
 pub const GRID_GAP: usize = 3;
 pub const TIMEZONE: u64 = 10800;
 

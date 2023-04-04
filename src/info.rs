@@ -2,7 +2,7 @@ use std::os::unix::prelude::{MetadataExt, PermissionsExt};
 use std::path::PathBuf;
 
 use crate::color::{file_name_fmt, kind_fmt, permissions_fmt, RED};
-use crate::display::{list::file_size, GRID_GAP};
+use crate::display::{list::size_to_string, GRID_GAP};
 use crate::fileinfo::{ext, ext_group, filename, link, link_line, time};
 use crate::unsafelibc::username_group;
 use crate::{Flags, Width};
@@ -27,6 +27,8 @@ pub struct FileLine {
 	pub group: String,
 	pub perm: String,
 	pub size: String,
+	pub suf: String,
+	pub lnk: bool,
 }
 
 fn f_info(path: &PathBuf, sname: String, _wh: &mut Width, fl: &Flags) -> File {
@@ -52,7 +54,7 @@ fn f_info(path: &PathBuf, sname: String, _wh: &mut Width, fl: &Flags) -> File {
 		ext,
 		len,
 		dir,
-		size: if !dir { md.size() } else { 0 },
+		size: if dir { 0 } else { md.size() },
 		time: time(&md, fl),
 		long: None,
 	};
@@ -75,6 +77,20 @@ fn l_info(path: &PathBuf, sname: String, wh: &mut Width, fl: &Flags) -> File {
 		},
 		false => md.size(),
 	};
+
+	let mut str_size = "".to_string();
+	let mut suf = "".to_string();
+	let sn = if dir {
+		size.to_string().len() + 1
+	} else if fl.human {
+		size.to_string().len()
+	} else {
+		(str_size, suf) = size_to_string(size);
+		str_size.len() + suf.len()
+	};
+	if wh.szn < sn {
+		wh.szn = sn
+	}
 
 	let (user, mut group) = username_group(md.uid(), md.gid());
 	if wh.uid < user.len() {
@@ -107,7 +123,9 @@ fn l_info(path: &PathBuf, sname: String, wh: &mut Width, fl: &Flags) -> File {
 			user,
 			group,
 			perm: format!("{}{}", kind_fmt(lnk, dir, md.nlink()), permissions_fmt(rwx)),
-			size: file_size(size, dir, lnk, fl.human),
+			size: str_size,
+			suf,
+			lnk,
 		}),
 	};
 }
@@ -117,10 +135,9 @@ pub fn file_info(path: &PathBuf, fl: &Flags, wh: &mut Width) -> Option<File> {
 	let dot = sname.chars().next().unwrap() == '.';
 
 	if !dot || fl.all {
-		let file = if fl.long {
-			l_info(path, sname, wh, fl)
-		} else {
-			f_info(path, sname, wh, fl)
+		let file = match fl.long {
+			true => l_info(path, sname, wh, fl),
+			false => f_info(path, sname, wh, fl),
 		};
 
 		if fl.dir_only && !file.dir {
@@ -128,5 +145,5 @@ pub fn file_info(path: &PathBuf, fl: &Flags, wh: &mut Width) -> Option<File> {
 		}
 		return Some(file);
 	}
-	return None;
+	None
 }

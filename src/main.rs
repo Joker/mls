@@ -30,6 +30,7 @@ pub struct Flags {
 pub struct Width {
 	pub uid: usize,
 	pub gid: usize,
+	pub szn: usize,
 }
 
 fn args_init() -> (Flags, Vec<String>) {
@@ -93,8 +94,8 @@ fn main() {
 	let mut standalone = Vec::new();
 	let mut folders = Vec::new();
 
-	let mut s_width = Width { uid: 0, gid: 0 };
-	let mut f_width = Width { uid: 0, gid: 0 };
+	let mut s_width = Width { uid: 0, gid: 0, szn: 0 };
+	let mut f_width = Width { uid: 0, gid: 0, szn: 0 };
 
 	for st in args {
 		match Path::new(&st) {

@@ -1,7 +1,6 @@
-use super::spaces;
 use crate::color::{BLACK_H, BLACK_L, GREEN, GREEN_L, WHITE};
 use crate::datetime::date_time_fmt;
-use crate::display::{FSIZE_WIDTH, TIMEZONE};
+use crate::display::TIMEZONE;
 use crate::info::File;
 use crate::{Flags, Width};
 
@@ -19,57 +18,52 @@ pub fn print(files: &Vec<File>, fl: &Flags, w: &Width) {
 fn line_fmt(f: &File, fl: &Flags, w: &Width) -> String {
 	match &f.long {
 		Some(l) => format!(
-			"{WHITE}{}{WHITE}{: >ncu$}{: >ncg$} {}  {}  {}",
+			"{WHITE}{}{WHITE}{: >ncu$}{: >ncg$}  {}  {}  {}",
 			l.perm,
 			l.user,
 			l.group,
 			date_time_fmt(f.time + TIMEZONE),
-			l.size,
+			size_fmt(f, w, fl.human),
 			f.name,
 			ncu = w.uid + 1,
-			ncg = if fl.group { w.gid + 1 } else { 0 }
+			ncg = if fl.group { w.gid + 1 } else { 0 },
 		),
 		_ => "".to_string(),
 	}
 }
 
-pub fn file_size(size: u64, dir: bool, lnk: bool, bitsize: bool) -> String {
-	const BIT_WIDTH: usize = 11;
-	if dir && (lnk || size == 0) {
-		let gap = if bitsize {
-			BIT_WIDTH - 1
-		} else {
-			FSIZE_WIDTH - 1
-		};
-		return format!("{BLACK_H}{}-", spaces(gap));
+pub fn size_fmt(f: &File, w: &Width, bitsize: bool) -> String {
+	let line = f.long.as_ref().unwrap();
+	if f.dir && (line.lnk || f.size == 0) {
+		return format!("{BLACK_H}{: >nsz$}", "-", nsz = w.szn);
 	}
-	if dir {
-		let sp = match bitsize {
-			true => spaces(BIT_WIDTH - 5),
-			false => "".to_string(),
-		};
-		return format!("{WHITE}{sp}{: >4}{BLACK_L}f", size);
+	if f.dir {
+		return format!("{WHITE}{: >nsz$}{BLACK_L}f", f.size, nsz = w.szn - 1);
 	}
 	if bitsize {
-		let spc = size.to_string().len();
-		return format!("{WHITE}{}{}", spaces(BIT_WIDTH - spc), size);
+		return format!("{WHITE}{: >nsz$}", f.size, nsz = w.szn);
 	}
-	size_fmt(size)
+	if line.suf.len() > 0 {
+		format!(
+			"{GREEN}{: >nsz$}{GREEN_L}{}",
+			line.size,
+			line.suf,
+			nsz = w.szn - 1
+		)
+	} else {
+		format!("{GREEN}{: >nsz$}", line.size, nsz = w.szn)
+	}
 }
 
-fn size_fmt(bytes: u64) -> String {
+pub fn size_to_string(bytes: u64) -> (String, String) {
 	match bytes {
-		bt if bt >= 1073741824 => color_size(short_size(bt as f64), "G"),
-		bt if bt >= 1048576 => color_size(short_size(bt as f64), "M"),
-		bt if bt >= 1024 => color_size(short_size(bt as f64), "k"),
-		bt if bt >= 1 => color_size(bt.to_string(), ""),
-		_ => format!("{GREEN_L}{}0{GREEN}", spaces(FSIZE_WIDTH - 1)),
+		bt if bt >= 1073741824 => (short_size(bt as f64), "G".to_string()),
+		bt if bt >= 1048576 => (short_size(bt as f64), "M".to_string()),
+		bt if bt >= 1024 => (short_size(bt as f64), "k".to_string()),
+		bt if bt >= 1 => (bt.to_string(), "".to_string()),
+		_ => ("0".to_string(), "".to_string()),
+		// _ => format!("{GREEN_L}{}0{GREEN}", spaces(FSIZE_WIDTH - 1)),
 	}
-}
-
-fn color_size(size: String, suffix: &str) -> String {
-	let sp = spaces(FSIZE_WIDTH - size.len() - suffix.len());
-	format!("{GREEN_L}{sp}{size}{GREEN}{suffix}")
 }
 
 const KB: f64 = 1024.0;
