@@ -5,6 +5,7 @@ use crate::color::{file_name_fmt, kind_fmt, permissions_fmt, RED};
 use crate::display::{list::size_to_string, GRID_GAP};
 use crate::fileinfo::{ext, ext_group, filename, link, link_line, time};
 use crate::unsafelibc::username_group;
+use crate::xattr::FileAttributes;
 use crate::{Flags, Width};
 
 pub const USEREXE: u32 = 64;
@@ -29,6 +30,7 @@ pub struct FileLine {
 	pub str_size: String,
 	pub suf: String,
 	pub lnk: bool,
+	pub xattr: bool,
 }
 
 fn f_info(path: &PathBuf, sname: String) -> File {
@@ -80,7 +82,7 @@ fn l_info(path: &PathBuf, sname: String, wh: &mut Width, fl: &Flags) -> File {
 	let mut suf = "".to_string();
 	let sn = if dir {
 		size.to_string().len() + 1
-	} else if fl.human {
+	} else if fl.bytes {
 		size.to_string().len()
 	} else {
 		(str_size, suf) = size_to_string(size);
@@ -107,6 +109,14 @@ fn l_info(path: &PathBuf, sname: String, wh: &mut Width, fl: &Flags) -> File {
 	}
 	let len = sname.chars().count() + GRID_GAP;
 
+	let xattr = match path.attributes() {
+		Ok(xa) => xa.len() > 0,
+		Err(_) => false,
+	};
+	if xattr {
+		wh.xattr = true
+	}
+
 	return File {
 		sname,
 		name,
@@ -122,6 +132,7 @@ fn l_info(path: &PathBuf, sname: String, wh: &mut Width, fl: &Flags) -> File {
 			str_size,
 			suf,
 			lnk,
+			xattr,
 		}),
 	};
 }

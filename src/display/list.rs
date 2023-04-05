@@ -18,12 +18,17 @@ pub fn print(files: &Vec<File>, fl: &Flags, w: &Width) {
 fn line_fmt(f: &File, fl: &Flags, w: &Width) -> String {
 	match &f.long {
 		Some(l) => format!(
-			"{WHITE}{}{WHITE}{: >ncu$}{: >ncg$}  {}  {}  {}",
+			"{WHITE}{}{WHITE}{}{: >ncu$}{: >ncg$}  {}  {}  {}",
 			l.perm,
+			match w.xattr {
+				true if l.xattr => "@",
+				true => " ",
+				false => "",
+			},
 			l.user,
 			l.group,
 			date_time_fmt(f.long.as_ref().unwrap().time + TIMEZONE),
-			size_fmt(f, w, fl.human),
+			size_fmt(f, w, fl.bytes),
 			f.name,
 			ncu = w.uid + 1,
 			ncg = if fl.group { w.gid + 1 } else { 0 },

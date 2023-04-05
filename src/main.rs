@@ -5,6 +5,7 @@ mod display;
 mod fileinfo;
 mod info;
 mod unsafelibc;
+mod xattr;
 
 use std::{cmp::Reverse, env, fs, path::Path};
 
@@ -20,7 +21,7 @@ pub struct Flags {
 	pub Size_sort: bool,
 	pub time_sort: bool,
 	pub full: bool,
-	pub human: bool,
+	pub bytes: bool,
 	pub ctime: bool,
 	pub u_access: bool,
 	pub U_create: bool,
@@ -34,6 +35,7 @@ pub struct Width {
 	pub uid: usize,
 	pub gid: usize,
 	pub szn: usize,
+	pub xattr: bool,
 }
 
 fn args_init() -> (Flags, Vec<String>) {
@@ -42,31 +44,32 @@ fn args_init() -> (Flags, Vec<String>) {
 	let mut parser = ArgParser::new()
 		.helptext(
 			r#"USAGE:
-	ls [-alStfhcuUgd] [file ...]
+	ls [-alStfbcuUgd] [file ...]
 OPTIONS:
 	-a   Include directory entries whose names begin with a dot (`.`).
 	-l   List files in the long format.
 	-S   Sort by size.
 	-t   Sort by time.
-	-f   Symbolic link absolute path.
-	-h   Size in bytes.
+	-f   Absolute path for symbolic link in the list.
+	-b   List file sizes in bytes.
 	-c   Use time when file status was last changed.
 	-u   Use time of last access, instead of time of last modification of the file.
 	-U   Use time when file was created.
 	-g   Display the group name.
-	-d   Display directories only.
-	-2
-	-3
-	-0
+	-d   List of directories only.
 	"#,
+			// -2   Recurse into directories as a tree. Limit the depth 2.
+			// -3   Recurse into directories as a tree. Limit the depth 3.
+			// -0   Recurse into directories as a tree.
+			// -L   Limit the depth of recursion.
 		)
-		.version("1.0")
 		.flag("a")
 		.flag("l")
 		.flag("S")
 		.flag("t")
 		.flag("f")
 		.flag("h")
+		.flag("b")
 		.flag("c")
 		.flag("u")
 		.flag("U")
@@ -85,7 +88,7 @@ OPTIONS:
 		Size_sort: parser.found("S"),
 		time_sort: parser.found("t"),
 		full: parser.found("f"),
-		human: parser.found("h"),
+		bytes: parser.found("b"),
 		ctime: parser.found("c"),
 		u_access: parser.found("u"),
 		U_create: parser.found("U"),
@@ -95,6 +98,9 @@ OPTIONS:
 		tree3: parser.found("3"),
 		tree0: parser.found("0"),
 	};
+	if parser.found("h") {
+		fl.bytes = true
+	}
 	match args[0].rsplit("/").next() {
 		Some(p) => match p {
 			"la" => fl.all = true,
@@ -128,11 +134,13 @@ fn main() {
 		uid: 0,
 		gid: 0,
 		szn: 0,
+		xattr: false,
 	};
 	let mut f_width = Width {
 		uid: 0,
 		gid: 0,
 		szn: 0,
+		xattr: false,
 	};
 
 	for st in args {
