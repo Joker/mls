@@ -10,7 +10,7 @@ use crate::{Flags, Width};
 
 pub const USEREXE: u32 = 64;
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct File {
 	pub sname: String,
 	pub name: String,
@@ -20,7 +20,7 @@ pub struct File {
 	pub long: Option<FileLine>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct FileLine {
 	pub size: u64,
 	pub time: u64,

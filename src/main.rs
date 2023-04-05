@@ -13,8 +13,10 @@ use crate::color::{BLUE_L, RED, WHITE};
 use crate::fileinfo::basepath;
 
 use arguably::ArgParser;
+use display::GRID_GAP;
 use info::{file_info, File};
 
+#[derive(Debug)]
 pub struct Flags {
 	pub all: bool,
 	pub long: bool,
@@ -31,6 +33,8 @@ pub struct Flags {
 	pub tree3: bool,
 	pub tree0: bool,
 }
+
+#[derive(Debug)]
 pub struct Width {
 	pub uid: usize,
 	pub gid: usize,
@@ -130,12 +134,6 @@ fn main() {
 	let mut standalone = Vec::new();
 	let mut folders = Vec::new();
 
-	let mut s_width = Width {
-		uid: 0,
-		gid: 0,
-		szn: 0,
-		xattr: false,
-	};
 	let mut f_width = Width {
 		uid: 0,
 		gid: 0,
@@ -145,15 +143,15 @@ fn main() {
 
 	for st in args {
 		match Path::new(&st) {
-			path if path.is_file() => match file_info(&path.to_path_buf(), &fl, &mut s_width) {
+			path if path.is_file() => match file_info(&path.to_path_buf(), &fl, &mut f_width) {
 				Some(mut f) => {
 					f.name = format!("{WHITE}{}/{}", basepath(path), f.name);
+					f.len = format!("{}/{}", basepath(path), f.sname).chars().count() + GRID_GAP;
 					standalone.push(f)
 				}
 				None => (),
 			},
 			path if path.is_dir() => {
-				// env::set_current_dir(path).unwrap();
 				let file_list = match fs::read_dir(path) {
 					Ok(list) => list
 						.filter_map(|x| file_info(&x.unwrap().path(), &fl, &mut f_width))
@@ -187,19 +185,23 @@ fn file_vec_print(title: Option<String>, mut file_list: Vec<File>, fl: &Flags, w
 		println!("\n{WHITE}{pt}:")
 	}
 
-	if file_list.len() == 0 {
-		return println!("{BLUE_L}.   ..");
-	}
-	if fl.Size_sort {
-		file_list.sort_by_key(|f| (Reverse(f.dir), f.long.as_ref().unwrap().size));
-		return display::list::print(&file_list, fl, w);
-	}
-	if fl.time_sort {
-		file_list.sort_by_key(|f| (f.long.as_ref().unwrap().time));
-		return display::list::print(&file_list, fl, w);
-	}
+	match file_list.len() {
+		0 => return println!("{BLUE_L}.   .."),
+		f if f > 1 => {
+			if fl.Size_sort {
+				file_list.sort_by_key(|f| (Reverse(f.dir), f.long.as_ref().unwrap().size));
+				return display::list::print(&file_list, fl, w);
+			}
 
-	file_list.sort_by_key(|f| (Reverse(f.dir), f.ext.clone(), f.sname.clone()));
+			if fl.time_sort {
+				file_list.sort_by_key(|f| (f.long.as_ref().unwrap().time));
+				return display::list::print(&file_list, fl, w);
+			}
+
+			file_list.sort_by_key(|f| (Reverse(f.dir), f.ext.clone(), f.sname.clone()));
+		}
+		_ => (),
+	}
 
 	if fl.long || fl.group {
 		return display::list::print(&file_list, fl, w);
