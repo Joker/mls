@@ -145,8 +145,12 @@ fn main() {
 		match Path::new(&st) {
 			path if path.is_file() => match file_info(&path.to_path_buf(), &fl, &mut f_width) {
 				Some(mut f) => {
-					f.name = format!("{WHITE}{}/{}", basepath(path), f.name);
-					f.len = format!("{}/{}", basepath(path), f.sname).chars().count() + GRID_GAP;
+					let mut bp = basepath(path);
+					if bp.len() > 0 {
+						bp += "/"
+					}
+					f.name = format!("{WHITE}{}{}", bp, f.name);
+					f.len = format!("{}{}", bp, f.sname).chars().count() + GRID_GAP;
 					standalone.push(f)
 				}
 				None => (),

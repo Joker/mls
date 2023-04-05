@@ -108,7 +108,7 @@ pub fn link_line(pb: &PathBuf, abs: bool) -> (String, bool) {
 	let (ext, egrp) = ext_group(ext(&path));
 	let name = filename(&path);
 
-	let path_to = if abs {
+	let mut path_to = if abs {
 		match std::fs::canonicalize(&pb_path) {
 			Ok(s) => basepath(s.as_path()),
 			Err(_) => basepath(path.as_path()),
@@ -116,9 +116,12 @@ pub fn link_line(pb: &PathBuf, abs: bool) -> (String, bool) {
 	} else {
 		basepath(path.as_path())
 	};
+	if path_to.len() > 0 {
+		path_to += "/"
+	}
 	(
 		format!(
-			"{WHITE} -> {CYAN}{path_to}/{}",
+			"{WHITE} -> {CYAN}{path_to}{}",
 			file_name_fmt(&name, &ext, egrp, dir, exe, false)
 		),
 		dir,
