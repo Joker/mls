@@ -1,9 +1,10 @@
 use std::usize;
 
-use super::{spaces, GRID_GAP};
-use crate::{unsafelibc::terminal_size, File};
+use crate::{ext::unlibc::terminal_size, File};
 
-fn width_sizes(files: &Vec<File>, stack_size: usize) -> (usize, Vec<usize>) {
+use super::{spaces, GRID_GAP};
+
+fn columns_width(files: &Vec<File>, stack_size: usize) -> (usize, Vec<usize>) {
 	let mut col_sizes = Vec::new();
 	let mut count = 0;
 	let mut maximum = 0;
@@ -34,11 +35,11 @@ fn grid_size(names: &Vec<File>) -> (usize, Vec<usize>) {
 		return (1, Vec::new());
 	}
 
-	let (mut width, mut col_sizes) = width_sizes(names, stack);
+	let (mut width, mut col_sizes) = columns_width(names, stack);
 	if term_width < width {
 		loop {
 			stack += 1;
-			(width, col_sizes) = width_sizes(names, stack);
+			(width, col_sizes) = columns_width(names, stack);
 			if term_width >= width {
 				return (stack, col_sizes);
 			}
@@ -47,7 +48,7 @@ fn grid_size(names: &Vec<File>) -> (usize, Vec<usize>) {
 		let mut column_out = col_sizes;
 		loop {
 			stack -= 1;
-			(width, col_sizes) = width_sizes(names, stack);
+			(width, col_sizes) = columns_width(names, stack);
 			if term_width == width {
 				return (stack, col_sizes);
 			}

@@ -1,8 +1,7 @@
 // from https://github.com/redox-os/termion
 
 use libc::{c_ushort, ioctl, STDOUT_FILENO, TIOCGWINSZ};
-use std::ffi::CStr;
-use std::{io, mem};
+use std::{ffi::CStr, io, mem};
 
 // Support functions for converting libc return values to io errors {
 trait IsMinusOne {
@@ -43,6 +42,8 @@ pub fn terminal_size() -> io::Result<(usize, usize)> {
 		Ok((size.col as usize, size.row as usize))
 	}
 }
+
+//
 
 pub fn username_group(uid: u32, gid: u32) -> (String, String) {
 	let grp = unsafe {

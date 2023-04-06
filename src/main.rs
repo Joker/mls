@@ -1,20 +1,16 @@
 #![allow(non_snake_case)]
 mod color;
-mod datetime;
 mod display;
-mod fileinfo;
-mod info;
-mod unsafelibc;
-mod xattr;
+mod ext;
+mod file;
+
+use arguably::ArgParser;
 
 use std::{cmp::Reverse, env, fs, path::Path};
 
 use crate::color::{BLUE_L, RED, WHITE};
-use crate::fileinfo::basepath;
-
-use arguably::ArgParser;
-use display::GRID_GAP;
-use info::{file_info, File};
+use crate::display::GRID_GAP;
+use crate::file::{name::basepath, File};
 
 #[derive(Debug)]
 pub struct Flags {
@@ -143,7 +139,7 @@ fn main() {
 
 	for st in args {
 		match Path::new(&st) {
-			path if path.is_file() => match file_info(&path.to_path_buf(), &fl, &mut f_width) {
+			path if path.is_file() => match file::info(&path.to_path_buf(), &fl, &mut f_width) {
 				Some(mut f) => {
 					let mut bp = basepath(path);
 					if bp.len() > 0 {
@@ -158,7 +154,7 @@ fn main() {
 			path if path.is_dir() => {
 				let file_list = match fs::read_dir(path) {
 					Ok(list) => list
-						.filter_map(|x| file_info(&x.unwrap().path(), &fl, &mut f_width))
+						.filter_map(|x| file::info(&x.unwrap().path(), &fl, &mut f_width))
 						.collect::<Vec<File>>(),
 					Err(e) => {
 						return println!("{}", e);
@@ -193,12 +189,12 @@ fn file_vec_print(title: Option<String>, mut file_list: Vec<File>, fl: &Flags, w
 		0 => return println!("{BLUE_L}.   .."),
 		f if f > 1 => {
 			if fl.Size_sort {
-				file_list.sort_by_key(|f| (Reverse(f.dir), f.long.as_ref().unwrap().size));
+				file_list.sort_by_key(|f| (Reverse(f.dir), f.line.as_ref().unwrap().size));
 				return display::list::print(&file_list, fl, w);
 			}
 
 			if fl.time_sort {
-				file_list.sort_by_key(|f| (f.long.as_ref().unwrap().time));
+				file_list.sort_by_key(|f| (f.line.as_ref().unwrap().time));
 				return display::list::print(&file_list, fl, w);
 			}
 
