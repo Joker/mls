@@ -75,9 +75,8 @@ OPTIONS:
 		.flag("U")
 		.flag("g")
 		.flag("d")
-		.flag("2")
-		.flag("3")
-		.flag("0");
+		.flag("T")
+		.option("L", "2");
 
 	if let Err(err) = parser.parse() {
 		err.exit();
@@ -94,9 +93,9 @@ OPTIONS:
 		U_create: parser.found("U"),
 		dir_only: parser.found("d"),
 		group: parser.found("g"),
-		tree2: parser.found("2"),
-		tree3: parser.found("3"),
-		tree0: parser.found("0"),
+		tree2: parser.found("T"),
+		tree3: false,
+		tree0: false,
 	};
 	if parser.found("h") {
 		fl.bytes = true
@@ -139,18 +138,8 @@ fn main() {
 
 	for st in args {
 		match Path::new(&st) {
-			path if path.is_file() => match file::info(&path.to_path_buf(), &fl, &mut f_width) {
-				Some(mut f) => {
-					let mut bp = basepath(path);
-					if bp.len() > 0 {
-						bp += "/"
-					}
-					f.name = format!("{WHITE}{}{}", bp, f.name);
-					f.len = format!("{}{}", bp, f.sname).chars().count() + GRID_GAP;
-					standalone.push(f)
-				}
-				None => (),
-			},
+			path if fl.tree2 => display::tree::print(path, &fl, &mut f_width, 0),
+
 			path if path.is_dir() => {
 				let file_list = match fs::read_dir(path) {
 					Ok(list) => list
@@ -162,8 +151,23 @@ fn main() {
 				};
 				folders.push((Some(st), file_list));
 			}
+			path if path.is_file() || path.is_symlink() => {
+				match file::info(&path.to_path_buf(), &fl, &mut f_width) {
+					Some(mut f) => {
+						let bp = basepath(path);
+						f.name = format!("{WHITE}{}{}", bp, f.name);
+						f.len = format!("{}{}", bp, f.sname).chars().count() + GRID_GAP;
+						standalone.push(f)
+					}
+					None => (),
+				}
+			}
 			_ => println!("{RED}{st}{WHITE}: No such file or directory\n"),
 		}
+	}
+
+	if fl.tree2 {
+		return;
 	}
 
 	let sl = standalone.len();

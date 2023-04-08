@@ -16,17 +16,17 @@ pub fn size_fmt(f: &File, w: &Width, bitsize: bool) -> String {
 	match line.suf.as_str() {
 		"M" | "G" => format!(
 			"{XT42}{: >nsz$}{XT23}{}",
-			line.str_size,
+			line.size_str,
 			line.suf,
 			nsz = w.szn - 1
 		),
 		"k" => format!(
 			"{GREEN}{: >nsz$}{XT23}{}",
-			line.str_size,
+			line.size_str,
 			line.suf,
 			nsz = w.szn - 1
 		),
-		_ => format!("{GREEN}{: >nsz$}", line.str_size, nsz = w.szn),
+		_ => format!("{GREEN}{: >nsz$}", line.size_str, nsz = w.szn),
 	}
 }
 

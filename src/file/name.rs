@@ -4,7 +4,13 @@ use crate::color::{BLUE_L, CYAN, GREEN_H, MAGENTA_L, WHITE, XT22, XT36, YELLOW};
 
 pub fn basepath(path: &Path) -> String {
 	match path.parent() {
-		Some(p) => p.to_string_lossy().to_string(),
+		Some(p) => {
+			let mut path = p.to_string_lossy().to_string();
+			if path.len() > 0 {
+				path += "/"
+			}
+			path
+		}
 		_ => "".to_string(),
 	}
 }
@@ -18,8 +24,9 @@ pub fn ext(path: &Path) -> String {
 
 pub fn ext_group(ext: String) -> (String, u8) {
 	match ext.as_str() {
-		"png" | "jpg" | "jpeg" | "gif" | "svg" | "webp" | "ico" | "bmp" => (format!("1_{ext}"), 1),
-
+		"png" | "jpg" | "jpeg" | "gif" | "svg" | "webp" | "ico" | "bmp" | "tiff" => {
+			(format!("1_{ext}"), 1)
+		}
 		"7z" | "zip" | "tar" | "gz" | "bz2" | "rar" | "tgz" | "xz" | "txz" => {
 			(format!("2_{ext}"), 2)
 		}

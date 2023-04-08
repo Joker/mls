@@ -34,13 +34,13 @@ pub struct File {
 
 #[derive(Debug)]
 pub struct FileLine {
-	pub size: u64,
 	pub time: u64,
+	pub size: u64,
+	pub size_str: String,
+	pub suf: String,
 	pub user: String,
 	pub group: String,
 	pub perm: String,
-	pub str_size: String,
-	pub suf: String,
 	pub lnk: bool,
 	pub xattr: bool,
 }
@@ -90,15 +90,15 @@ fn list_info(path: &PathBuf, sname: String, wh: &mut Width, fl: &Flags) -> File 
 		false => md.size(),
 	};
 
-	let mut str_size = "".to_string();
+	let mut size_str = "".to_string();
 	let mut suf = "".to_string();
 	let sn = if dir {
 		size.to_string().len() + 1
 	} else if fl.bytes {
 		size.to_string().len()
 	} else {
-		(str_size, suf) = size_to_string(size);
-		str_size.len() + suf.len()
+		(size_str, suf) = size_to_string(size);
+		size_str.len() + suf.len()
 	};
 	if wh.szn < sn {
 		wh.szn = sn
@@ -136,13 +136,13 @@ fn list_info(path: &PathBuf, sname: String, wh: &mut Width, fl: &Flags) -> File 
 		len,
 		dir,
 		line: Some(FileLine {
-			size,
 			time: time::unix(&md, fl),
+			size,
+			size_str,
+			suf,
 			user,
 			group,
 			perm: format!("{}{}", kind_fmt(lnk, dir, md.nlink()), permissions_fmt(rwx)),
-			str_size,
-			suf,
 			lnk,
 			xattr,
 		}),
