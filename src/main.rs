@@ -28,6 +28,7 @@ pub struct Flags {
 	pub tree2: bool,
 	pub tree3: bool,
 	pub tree0: bool,
+	pub lvl: usize,
 }
 
 #[derive(Debug)]
@@ -96,6 +97,7 @@ OPTIONS:
 		tree2: parser.found("T"),
 		tree3: false,
 		tree0: false,
+		lvl:3,
 	};
 	if parser.found("h") {
 		fl.bytes = true
