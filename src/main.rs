@@ -5,8 +5,9 @@ mod ext;
 mod file;
 
 use arguably::ArgParser;
+use display::tree;
 
-use std::{cmp::Reverse, env, fs, path::Path};
+use std::{cmp::Reverse, env, path::Path};
 
 use crate::color::{BLUE_L, RED, WHITE};
 use crate::display::GRID_GAP;
@@ -29,6 +30,7 @@ pub struct Flags {
 	pub tree3: bool,
 	pub tree0: bool,
 	pub lvl: usize,
+	pub list_format: bool,
 }
 
 #[derive(Debug)]
@@ -97,8 +99,10 @@ OPTIONS:
 		tree2: parser.found("T"),
 		tree3: false,
 		tree0: false,
-		lvl:3,
+		lvl: 3,
+		list_format: false,
 	};
+	fl.list_format = fl.long || fl.Size_sort || fl.time_sort || fl.group;
 	if parser.found("h") {
 		fl.bytes = true
 	}
@@ -140,17 +144,13 @@ fn main() {
 
 	for st in args {
 		match Path::new(&st) {
-			path if fl.tree2 => display::tree::print(path, &fl, &mut f_width, 0),
-
 			path if path.is_dir() => {
-				let file_list = match fs::read_dir(path) {
-					Ok(list) => list
-						.filter_map(|x| file::info(&x.unwrap().path(), &fl, &mut f_width))
-						.collect::<Vec<File>>(),
-					Err(e) => {
-						return println!("{}", e);
-					}
-				};
+				let file_list;
+				if fl.tree2 && fl.list_format {
+					file_list = tree::list(path, &fl, &mut f_width, 0);
+				} else {
+					file_list = file::list(path, &fl, &mut f_width);
+				}
 				folders.push((Some(st), file_list));
 			}
 			path if path.is_file() || path.is_symlink() => {
@@ -168,10 +168,6 @@ fn main() {
 		}
 	}
 
-	if fl.tree2 {
-		return;
-	}
-
 	let sl = standalone.len();
 	if sl > 0 {
 		file_vec_print(None, standalone, &fl, &f_width)
@@ -181,7 +177,10 @@ fn main() {
 		folders[0].0 = None;
 	}
 
-	for (title, folder) in folders {
+	for (mut title, folder) in folders {
+		if fl.tree2 {
+			title = None
+		}
 		file_vec_print(title, folder, &fl, &f_width)
 	}
 }
@@ -203,8 +202,9 @@ fn file_vec_print(title: Option<String>, mut file_list: Vec<File>, fl: &Flags, w
 				file_list.sort_by_key(|f| (f.line.as_ref().unwrap().time));
 				return display::list::print(&file_list, fl, w);
 			}
-
-			file_list.sort_by_key(|f| (Reverse(f.dir), f.ext.clone(), f.sname.clone()));
+			if !fl.tree2 {
+				file_list.sort_by_key(|f| (Reverse(f.dir), f.ext.clone(), f.sname.clone()));
+			}
 		}
 		_ => (),
 	}

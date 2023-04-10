@@ -1,8 +1,8 @@
-use std::{cmp::Reverse, fs, path::Path};
+use std::{cmp::Reverse, path::Path};
 
 use crate::{
 	color::WHITE,
-	file::{self, File},
+	file::{self, name::basepath, File},
 	Flags, Width,
 };
 
@@ -14,42 +14,38 @@ pub fn trunc(width: usize) -> String {
 	(0..width).into_iter().map(|_| TRUNK).collect()
 }
 
-fn line_fmt(f: &File, _fl: &Flags, _w: &Width) -> String {
-	f.name.clone()
-}
-
-fn dir(path: &Path, fl: &Flags, w: &mut Width) -> Vec<File> {
-	let mut flist = match fs::read_dir(path) {
-		Ok(list) => list
-			.filter_map(|x| file::info(&x.unwrap().path(), &fl, w))
-			.collect::<Vec<File>>(),
-		Err(e) => {
-			println!("read_dir: {}", e);
-			return Vec::new();
-		}
-	};
-	flist.sort_by_key(|f| (Reverse(f.dir), f.ext.clone(), f.sname.clone()));
-	flist
-}
-
-pub fn print(path: &Path, fl: &Flags, w: &mut Width, lvl: usize) {
+pub fn list(path: &Path, fl: &Flags, w: &mut Width, lvl: usize) -> Vec<File> {
+	let mut out = Vec::new();
 	if fl.lvl <= lvl {
-		return;
+		return out;
 	}
-	let files = dir(path, fl, w);
+	let mut files = file::list(path, fl, w);
 	if files.len() == 0 {
-		return;
+		return out;
 	}
-	let last = files.iter().last().unwrap();
+	files.sort_by_key(|f| (Reverse(f.dir), f.ext.clone(), f.sname.clone()));
 
+	if lvl == 0 {
+		let mut f = file::info(&path.to_path_buf(), &fl, w).unwrap();
+		f.name = format!("{WHITE}{}{}", basepath(path), f.name);
+		out.push(f);
+	}
+
+	let last = files.iter().last().unwrap();
 	files.iter().for_each(|f| {
-		if std::ptr::eq(f, last) {
-			println!("{}{}{} {}", WHITE, trunc(lvl), END, line_fmt(f, fl, w))
-		} else {
-			println!("{}{}{} {}", WHITE, trunc(lvl), LEAF, line_fmt(f, fl, w))
-		}
+		let mut fclone = f.clone();
+		fclone.name = format!(
+			"{WHITE}{}{} {}",
+			trunc(lvl),
+			if std::ptr::eq(f, last) { END } else { LEAF },
+			f.name
+		);
+		out.push(fclone);
+
 		if f.dir {
-			print(path.join(Path::new(&f.sname)).as_path(), fl, w, lvl + 1)
+			let subt = list(path.join(Path::new(&f.sname)).as_path(), fl, w, lvl + 1);
+			out.extend(subt);
 		}
-	})
+	});
+	out
 }

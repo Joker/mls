@@ -1,11 +1,12 @@
-pub mod mode;
 pub mod link;
+pub mod mode;
 pub mod name;
 pub mod size;
 pub mod time;
 
+use std::fs;
 use std::os::unix::prelude::{MetadataExt, PermissionsExt};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use crate::{
 	color::RED,
@@ -16,13 +17,13 @@ use crate::{
 
 use self::{
 	mode::{kind_fmt, permissions_fmt},
-	name::{ext, ext_group, filename_fmt, filename},
+	name::{ext, ext_group, filename, filename_fmt},
 	size::size_to_string,
 };
 
 pub const USEREXE: u32 = 64;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct File {
 	pub sname: String,
 	pub name: String,
@@ -32,7 +33,7 @@ pub struct File {
 	pub line: Option<FileLine>,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct FileLine {
 	pub time: u64,
 	pub size: u64,
@@ -151,10 +152,10 @@ fn list_info(path: &PathBuf, sname: String, wh: &mut Width, fl: &Flags) -> File 
 
 pub fn info(path: &PathBuf, fl: &Flags, wh: &mut Width) -> Option<File> {
 	let sname = filename(path);
-	let dot = sname.chars().next().unwrap() == '.';
+	let dot = sname.starts_with('.') && sname.len() > 1;
 
 	if !dot || fl.all {
-		let file = match fl.long || fl.Size_sort || fl.time_sort || fl.group {
+		let file = match fl.list_format {
 			true => list_info(path, sname, wh, fl),
 			false => grid_info(path, sname),
 		};
@@ -165,4 +166,16 @@ pub fn info(path: &PathBuf, fl: &Flags, wh: &mut Width) -> Option<File> {
 		return Some(file);
 	}
 	None
+}
+
+pub fn list(path: &Path, fl: &Flags, w: &mut Width) -> Vec<File> {
+	match fs::read_dir(path) {
+		Ok(list) => list
+			.filter_map(|x| info(&x.unwrap().path(), &fl, w))
+			.collect::<Vec<File>>(),
+		Err(e) => {
+			println!("read_dir: {}", e);
+			return Vec::new();
+		}
+	}
 }
