@@ -10,7 +10,6 @@ edition = "2021"
 
 
 [dependencies]
-arguably = "2.2.0"
 libc = "0.2.*"
 
 [profile.release]

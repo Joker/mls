@@ -1,9 +1,10 @@
 use std::{cmp::Reverse, path::Path};
 
 use crate::{
+	args::Flags,
 	color::WHITE,
 	file::{self, name::basepath, File},
-	Flags, Width,
+	Width,
 };
 
 pub static END: &str = "└──";
@@ -19,11 +20,19 @@ pub fn list(path: &Path, fl: &Flags, w: &mut Width, lvl: usize) -> Vec<File> {
 	if fl.lvl <= lvl {
 		return out;
 	}
+
 	let mut files = file::list(path, fl, w);
 	if files.len() == 0 {
 		return out;
 	}
-	files.sort_by_key(|f| (Reverse(f.dir), f.ext.clone(), f.sname.clone()));
+
+	if fl.Size_sort {
+		files.sort_by_key(|f| (Reverse(f.dir), f.line.as_ref().unwrap().size));
+	} else if fl.time_sort {
+		files.sort_by_key(|f| (f.line.as_ref().unwrap().time));
+	} else {
+		files.sort_by_key(|f| (Reverse(f.dir), f.ext.clone(), f.sname.clone()));
+	}
 
 	if lvl == 0 {
 		let mut f = file::info(&path.to_path_buf(), &fl, w).unwrap();
@@ -48,4 +57,15 @@ pub fn list(path: &Path, fl: &Flags, w: &mut Width, lvl: usize) -> Vec<File> {
 		}
 	});
 	out
+}
+
+pub fn print(files: &Vec<File>) {
+	println!(
+		"{}",
+		files
+			.iter()
+			.map(|f| f.name.clone())
+			.collect::<Vec<_>>()
+			.join("\n")
+	)
 }

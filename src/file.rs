@@ -9,10 +9,11 @@ use std::os::unix::prelude::{MetadataExt, PermissionsExt};
 use std::path::{Path, PathBuf};
 
 use crate::{
+	args::Flags,
 	color::RED,
 	display::GRID_GAP,
 	ext::{unlibc::username_group, xattr::FileAttributes},
-	{Flags, Width},
+	Width,
 };
 
 use self::{

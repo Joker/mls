@@ -1,37 +1,16 @@
 #![allow(non_snake_case)]
+mod args;
 mod color;
 mod display;
 mod ext;
 mod file;
 
-use arguably::ArgParser;
-use display::tree;
+use std::{cmp::Reverse, path::Path};
 
-use std::{cmp::Reverse, env, path::Path};
-
-use crate::color::{BLUE_L, RED, WHITE};
-use crate::display::GRID_GAP;
-use crate::file::{name::basepath, File};
-
-#[derive(Debug)]
-pub struct Flags {
-	pub all: bool,
-	pub long: bool,
-	pub Size_sort: bool,
-	pub time_sort: bool,
-	pub full: bool,
-	pub bytes: bool,
-	pub ctime: bool,
-	pub u_access: bool,
-	pub U_create: bool,
-	pub dir_only: bool,
-	pub group: bool,
-	pub tree2: bool,
-	pub tree3: bool,
-	pub tree0: bool,
-	pub lvl: usize,
-	pub list_format: bool,
-}
+use args::{args_init, Flags};
+use color::{BLUE_L, RED, WHITE};
+use display::{tree, GRID_GAP};
+use file::{name::basepath, File};
 
 #[derive(Debug)]
 pub struct Width {
@@ -41,101 +20,12 @@ pub struct Width {
 	pub xattr: bool,
 }
 
-fn args_init() -> (Flags, Vec<String>) {
-	let args: Vec<String> = env::args().collect();
-
-	let mut parser = ArgParser::new()
-		.helptext(
-			r#"USAGE:
-	ls [-alStfbcuUgd] [file ...]
-OPTIONS:
-	-a   Include directory entries whose names begin with a dot (`.`).
-	-l   List files in the long format.
-	-S   Sort by size.
-	-t   Sort by time.
-	-f   Absolute path for symbolic link in the list.
-	-b   List file sizes in bytes.
-	-c   Use time when file status was last changed.
-	-u   Use time of last access, instead of time of last modification of the file.
-	-U   Use time when file was created.
-	-g   Display the group name.
-	-d   List of directories only.
-	"#,
-			// -2   Recurse into directories as a tree. Limit the depth 2.
-			// -3   Recurse into directories as a tree. Limit the depth 3.
-			// -0   Recurse into directories as a tree.
-			// -L   Limit the depth of recursion.
-		)
-		.flag("a")
-		.flag("l")
-		.flag("S")
-		.flag("t")
-		.flag("f")
-		.flag("h")
-		.flag("b")
-		.flag("c")
-		.flag("u")
-		.flag("U")
-		.flag("g")
-		.flag("d")
-		.flag("T")
-		.option("L", "2");
-
-	if let Err(err) = parser.parse() {
-		err.exit();
-	}
-	let mut fl = Flags {
-		all: parser.found("a"),
-		long: parser.found("l"),
-		Size_sort: parser.found("S"),
-		time_sort: parser.found("t"),
-		full: parser.found("f"),
-		bytes: parser.found("b"),
-		ctime: parser.found("c"),
-		u_access: parser.found("u"),
-		U_create: parser.found("U"),
-		dir_only: parser.found("d"),
-		group: parser.found("g"),
-		tree2: parser.found("T"),
-		tree3: false,
-		tree0: false,
-		lvl: 3,
-		list_format: false,
-	};
-	fl.list_format = fl.long || fl.Size_sort || fl.time_sort || fl.group;
-	if parser.found("h") {
-		fl.bytes = true
-	}
-	match args[0].rsplit("/").next() {
-		Some(p) => match p {
-			"la" => fl.all = true,
-			"lla" | "lal" => {
-				fl.long = true;
-				fl.all = true;
-			}
-			"ll" => fl.long = true,
-			"lt" => fl.tree2 = true,
-			"lsd" => fl.dir_only = true,
-			_ => (),
-		},
-		None => (),
-	};
-
-	let dirs = if parser.args.len() > 0 {
-		parser.args
-	} else {
-		vec![".".to_string()]
-	};
-	(fl, dirs)
-}
-
 fn main() {
-	let (fl, args) = args_init();
+	let (flags, args) = args_init();
 
 	let mut standalone = Vec::new();
 	let mut folders = Vec::new();
-
-	let mut f_width = Width {
+	let mut width = Width {
 		uid: 0,
 		gid: 0,
 		szn: 0,
@@ -146,15 +36,15 @@ fn main() {
 		match Path::new(&st) {
 			path if path.is_dir() => {
 				let file_list;
-				if fl.tree2 && fl.list_format {
-					file_list = tree::list(path, &fl, &mut f_width, 0);
+				if flags.tree_format {
+					file_list = tree::list(path, &flags, &mut width, 0);
 				} else {
-					file_list = file::list(path, &fl, &mut f_width);
+					file_list = file::list(path, &flags, &mut width);
 				}
 				folders.push((Some(st), file_list));
 			}
 			path if path.is_file() || path.is_symlink() => {
-				match file::info(&path.to_path_buf(), &fl, &mut f_width) {
+				match file::info(&path.to_path_buf(), &flags, &mut width) {
 					Some(mut f) => {
 						let bp = basepath(path);
 						f.name = format!("{WHITE}{}{}", bp, f.name);
@@ -168,20 +58,20 @@ fn main() {
 		}
 	}
 
-	let sl = standalone.len();
-	if sl > 0 {
-		file_vec_print(None, standalone, &fl, &f_width)
+	let sa_len = standalone.len();
+	if sa_len > 0 {
+		file_vec_print(None, standalone, &flags, &width)
 	}
 
-	if folders.len() == 1 && sl == 0 {
+	if folders.len() == 1 && sa_len == 0 {
 		folders[0].0 = None;
 	}
 
-	for (mut title, folder) in folders {
-		if fl.tree2 {
-			title = None
+	for (title, folder) in folders {
+		match flags.tree_format {
+			true => file_vec_print(None, folder, &flags, &width),
+			false => file_vec_print(title, folder, &flags, &width),
 		}
-		file_vec_print(title, folder, &fl, &f_width)
 	}
 }
 
@@ -190,27 +80,30 @@ fn file_vec_print(title: Option<String>, mut file_list: Vec<File>, fl: &Flags, w
 		println!("\n{WHITE}{pt}:")
 	}
 
-	match file_list.len() {
-		0 => return println!("{BLUE_L}.   .."),
-		f if f > 1 => {
-			if fl.Size_sort {
-				file_list.sort_by_key(|f| (Reverse(f.dir), f.line.as_ref().unwrap().size));
-				return display::list::print(&file_list, fl, w);
-			}
-
-			if fl.time_sort {
-				file_list.sort_by_key(|f| (f.line.as_ref().unwrap().time));
-				return display::list::print(&file_list, fl, w);
-			}
-			if !fl.tree2 {
-				file_list.sort_by_key(|f| (Reverse(f.dir), f.ext.clone(), f.sname.clone()));
-			}
-		}
+	let fl_len = file_list.len();
+	match fl_len {
+		0 if !fl.list_format && !fl.tree_format => return println!("{BLUE_L}.   .."),
+		0 => return,
 		_ => (),
 	}
 
-	if fl.long || fl.group {
+	if !fl.tree_format && fl_len > 1 {
+		if fl.Size_sort {
+			file_list.sort_by_key(|f| (Reverse(f.dir), f.line.as_ref().unwrap().size));
+			return display::list::print(&file_list, fl, w);
+		}
+		if fl.time_sort {
+			file_list.sort_by_key(|f| (f.line.as_ref().unwrap().time));
+			return display::list::print(&file_list, fl, w);
+		}
+		file_list.sort_by_key(|f| (Reverse(f.dir), f.ext.clone(), f.sname.clone()));
+	}
+
+	if fl.list_format {
 		return display::list::print(&file_list, fl, w);
+	}
+	if fl.tree_format {
+		return display::tree::print(&file_list);
 	}
 	display::grid::print(&file_list);
 }

@@ -3,9 +3,9 @@ use std::os::unix::prelude::MetadataExt;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::{
+	args::Flags,
 	color::{DAY1, DAY2, WEK1, WEK4, YEAR},
 	ext::datetime::seconds_to_datetime,
-	Flags,
 };
 
 pub const TIMEZONE: u64 = 10800;

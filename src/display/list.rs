@@ -1,7 +1,8 @@
 use crate::{
+	args::Flags,
 	color::WHITE,
 	file::{size::size_fmt, time::date_time_fmt, time::TIMEZONE, File},
-	{Flags, Width},
+	Width,
 };
 
 fn line_fmt(f: &File, fl: &Flags, w: &Width) -> String {
