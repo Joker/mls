@@ -41,41 +41,17 @@ use std::collections::HashMap;
 use std::error;
 use std::fmt;
 
-/// Error types returned by the library.
+// We create a single Opt instance for each registered option, i.e. each call to `.option()`.
 #[derive(Debug)]
-pub enum Error {
-	/// Returned when the parser detects an unregistered flag, option, or command name.
-	InvalidName(String),
-
-	/// Returned when the parser detects an option with a missing value.
-	MissingValue(String),
-
-	/// Returned when the parser detects a help command with a missing argument.
-	MissingHelpArg,
-
-	/// Returned when the command line arguments are not valid unicode strings.
-	InvalidUnicode,
+struct Opt {
+	values: Vec<String>,
+	default: String,
 }
 
-impl error::Error for Error {}
-
-impl fmt::Display for Error {
-	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		match self {
-			Error::InvalidName(msg) => write!(f, "Error: {}", msg),
-			Error::MissingValue(msg) => write!(f, "Error: {}", msg),
-			Error::MissingHelpArg => write!(f, "Error: missing argument for the help command"),
-			Error::InvalidUnicode => write!(f, "Error: arguments are not valid unicode strings"),
-		}
-	}
-}
-
-impl Error {
-	/// Prints an error message to `stderr` and exits with a non-zero status code.
-	pub fn exit(self) -> ! {
-		eprintln!("{}.", self);
-		std::process::exit(1);
-	}
+// We create a single Flag instance for each registered flag, i.e. each call to `.flag()`.
+#[derive(Debug)]
+struct Flag {
+	count: usize,
 }
 
 /// An ArgParser instance can be intialized using the builder pattern.
@@ -90,17 +66,20 @@ impl Error {
 /// ```
 #[derive(Debug)]
 pub struct ArgParser {
-	helptext: Option<String>,
+	helphead: Option<String>,
 	version: Option<String>,
+
 	options: Vec<Opt>,
 	option_map: HashMap<String, usize>,
+
 	flags: Vec<Flag>,
 	flag_map: HashMap<String, usize>,
+
 	commands: Vec<ArgParser>,
 	command_map: HashMap<String, usize>,
-	// callback: Option<fn(&str, &ArgParser)>,
 
-	pub app_name: Option<String>,
+	/// Stores application path.
+	pub app_path: Option<String>,
 
 	/// Stores positional arguments.
 	pub args: Vec<String>,
@@ -110,29 +89,29 @@ pub struct ArgParser {
 
 	/// Stores the command's `ArgParser` instance, if a command was found.
 	pub cmd_parser: Option<Box<ArgParser>>,
-
-	/// Deprecated. Use `.enable_help_command()` instead.
-	pub cmd_help: bool,
 }
 
 impl ArgParser {
 	/// Creates a new ArgParser instance.
 	pub fn new() -> ArgParser {
 		ArgParser {
-			helptext: None,
+			helphead: None,
 			version: None,
-			app_name: std::env::args().next(),
-			args: Vec::new(),
+
 			options: Vec::new(),
 			option_map: HashMap::new(),
+
 			flags: Vec::new(),
 			flag_map: HashMap::new(),
+
 			commands: Vec::new(),
 			command_map: HashMap::new(),
-			// callback: None,
+
+			app_path: std::env::args().next(),
+			args: Vec::new(),
+
 			cmd_name: None,
 			cmd_parser: None,
-			cmd_help: false,
 		}
 	}
 
@@ -149,7 +128,7 @@ impl ArgParser {
 	where
 		S: Into<String>,
 	{
-		self.helptext = Some(text.into());
+		self.helphead = Some(text.into());
 		self
 	}
 
@@ -222,9 +201,6 @@ impl ArgParser {
 	///     );
 	/// ```
 	pub fn command(mut self, name: &str, cmd_parser: ArgParser) -> Self {
-		if cmd_parser.helptext.is_some() {
-			self.cmd_help = true;
-		}
 		self.commands.push(cmd_parser);
 		let index = self.commands.len() - 1;
 		for alias in name.split_whitespace() {
@@ -232,23 +208,6 @@ impl ArgParser {
 		}
 		self
 	}
-
-	/// This boolean switch toggles support for an automatic `help` command that prints subcommand
-	/// helptext. The value defaults to `false` but gets toggled automatically to `true` whenever a
-	/// command with helptext is registered. You can use this method to disable the feature if
-	/// required.
-	pub fn enable_help_command(mut self, enable: bool) -> Self {
-		self.cmd_help = enable;
-		self
-	}
-
-	/// Registers a callback function on a command parser. If the command is found the
-	/// function will be called and passed the command name and a reference to the
-	/// command's `ArgParser` instance.
-	// pub fn callback(mut self, f: fn(&str, &ArgParser)) -> Self {
-	// 	self.callback = Some(f);
-	// 	self
-	// }
 
 	/// Returns the value of the named option. Returns the default value registered
 	/// with the option if the option was not found. Any of the option's registered
@@ -335,13 +294,13 @@ impl ArgParser {
 					}
 				}
 				arg if arg.starts_with("--") => match arg.contains("=") {
-					true => self.handle_equals_opt(&arg)?,
-					false => self.handle_long_opt(&arg, argstream)?,
+					true => self.handle_equals_opt(arg)?,
+					false => self.handle_long_opt(arg, argstream)?,
 				},
-				arg if arg.starts_with("-") => match arg {
-					"-" => self.args.push(arg.to_string()),
-					a if a.contains("=") => self.handle_equals_opt(arg)?,
-					_ => self.handle_short_opt(&arg, argstream)?,
+				"-" => self.args.push("-".to_string()),
+				arg if arg.starts_with("-") => match arg.contains("=") {
+					true => self.handle_equals_opt(arg)?,
+					false => self.handle_short_opt(arg, argstream)?,
 				},
 				arg if is_first_arg && self.command_map.contains_key(arg) => {
 					let mut cp = self.commands.remove(*self.command_map.get(arg).unwrap());
@@ -349,32 +308,9 @@ impl ArgParser {
 					self.commands.clear();
 
 					cp.parse_argstream(argstream)?;
-					// if let Some(callback) = cp.callback {
-					// 	callback(&arg, &cp);
-					// }
+
 					self.cmd_name = Some(arg.to_string());
 					self.cmd_parser = Some(Box::new(cp));
-				}
-				"help" if is_first_arg && self.cmd_help => {
-					if !argstream.has_next() {
-						return Err(Error::MissingHelpArg);
-					}
-
-					let name = argstream.next();
-					match self.command_map.get(&name) {
-						Some(i) => {
-							let cp = &mut self.commands[*i];
-							let helptext = cp.helptext.as_deref().unwrap_or("").trim();
-							println!("{}", helptext);
-							std::process::exit(0);
-						}
-						None => {
-							return Err(Error::InvalidName(format!(
-								"'{}' is not a recognised command name",
-								&name
-							)));
-						}
-					}
 				}
 				arg => self.args.push(arg.to_string()),
 			}
@@ -389,6 +325,7 @@ impl ArgParser {
 			self.flags[*index].count += 1;
 			return Ok(());
 		}
+
 		if let Some(index) = self.option_map.get(&arg[2..]) {
 			if !argstream.has_next() {
 				return Err(Error::MissingValue(format!("missing value for {}", arg)));
@@ -398,14 +335,6 @@ impl ArgParser {
 			return Ok(());
 		}
 
-		if arg == "--help" && self.helptext.is_some() {
-			println!("{}", self.helptext.as_ref().unwrap().trim());
-			std::process::exit(0);
-		}
-		if arg == "--version" && self.version.is_some() {
-			println!("{}", self.version.as_ref().unwrap().trim());
-			std::process::exit(0);
-		}
 		return Err(Error::InvalidName(format!(
 			"{arg} is not a recognised flag or option name",
 		)));
@@ -415,30 +344,25 @@ impl ArgParser {
 		for c in arg.chars().skip(1) {
 			if let Some(index) = self.flag_map.get(&c.to_string()) {
 				self.flags[*index].count += 1;
-			} else if let Some(index) = self.option_map.get(&c.to_string()) {
+				continue;
+			}
+
+			if let Some(index) = self.option_map.get(&c.to_string()) {
 				if !argstream.has_next() {
-					let msg = if arg.chars().count() > 2 {
-						format!("missing value for '{}' in {}", c, arg)
-					} else {
-						format!("missing value for {}", arg)
-					};
-					return Err(Error::MissingValue(msg));
+					return Err(Error::MissingValue(match arg.chars().count() > 2 {
+						true => format!("missing value for '{}' in {}", c, arg),
+						false => format!("missing value for {}", arg),
+					}));
 				}
 
 				self.options[*index].values.push(argstream.next());
-			} else if c == 'h' && self.helptext.is_some() {
-				println!("{}", self.helptext.as_ref().unwrap().trim());
-				std::process::exit(0);
-			} else if c == 'v' && self.version.is_some() {
-				println!("{}", self.version.as_ref().unwrap().trim());
-				std::process::exit(0);
-			} else {
-				let msg = match arg.chars().count() > 2 {
-					true => format!("'{}' in {} is not a recognised flag or option name", c, arg),
-					false => format!("{} is not a recognised flag or option name", arg),
-				};
-				return Err(Error::InvalidName(msg));
+				continue;
 			}
+
+			return Err(Error::InvalidName(match arg.chars().count() > 2 {
+				true => format!("'{}' in {} is not a recognised flag or option name", c, arg),
+				false => format!("{} is not a recognised flag or option name", arg),
+			}));
 		}
 		Ok(())
 	}
@@ -450,17 +374,20 @@ impl ArgParser {
 
 		if let Some(index) = self.option_map.get(name.trim_start_matches('-')) {
 			if value == "" {
-				return Err(Error::MissingValue(format!("missing value for {}", name)));
+				return Err(Error::MissingValue(format!("missing value for {name}")));
 			}
 
 			self.options[*index].values.push(value.to_string());
 			return Ok(());
 		}
+
 		return Err(Error::InvalidName(format!(
 			"{name} is not a recognised option name"
 		)));
 	}
 }
+
+//
 
 // This type functions as a wrapper to make the input argument vector available as a stream.
 struct ArgStream {
@@ -486,15 +413,41 @@ impl ArgStream {
 	}
 }
 
-// We create a single Opt instance for each registered option, i.e. each call to `.option()`.
+//
+
+/// Error types returned by the library.
 #[derive(Debug)]
-struct Opt {
-	values: Vec<String>,
-	default: String,
+pub enum Error {
+	/// Returned when the parser detects an unregistered flag, option, or command name.
+	InvalidName(String),
+
+	/// Returned when the parser detects an option with a missing value.
+	MissingValue(String),
+
+	/// Returned when the parser detects a help command with a missing argument.
+	MissingHelpArg,
+
+	/// Returned when the command line arguments are not valid unicode strings.
+	InvalidUnicode,
 }
 
-// We create a single Flag instance for each registered flag, i.e. each call to `.flag()`.
-#[derive(Debug)]
-struct Flag {
-	count: usize,
+impl error::Error for Error {}
+
+impl fmt::Display for Error {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		match self {
+			Error::InvalidName(msg) => write!(f, "Error: {}", msg),
+			Error::MissingValue(msg) => write!(f, "Error: {}", msg),
+			Error::MissingHelpArg => write!(f, "Error: missing argument for the help command"),
+			Error::InvalidUnicode => write!(f, "Error: arguments are not valid unicode strings"),
+		}
+	}
+}
+
+impl Error {
+	/// Prints an error message to `stderr` and exits with a non-zero status code.
+	pub fn exit(self) -> ! {
+		eprintln!("{}.", self);
+		std::process::exit(1);
+	}
 }

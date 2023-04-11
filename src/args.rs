@@ -97,7 +97,7 @@ OPTIONS:
 		list_format: false,
 		tree_format: false,
 	};
-	match &parser.app_name {
+	match &parser.app_path {
 		Some(p) => match p.rsplit_once("/").unwrap_or(("","")).1 {
 			"la" => fl.all = true,
 			"lla" | "lal" => {
@@ -115,7 +115,6 @@ OPTIONS:
 	fl.list_format = fl.long || fl.Size_sort || fl.time_sort || fl.group;
 	fl.tree_format = tree.0 || tree.1 || tree.2 || tree.3;
 	
-	println!("{:#?}", parser);
 	let dirs = if parser.args.len() > 0 {
 		parser.args
 	} else {

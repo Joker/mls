@@ -31,7 +31,7 @@ pub struct File {
 	pub ext: String,
 	pub len: usize,
 	pub dir: bool,
-	pub line: Option<FileLine>,
+	pub line: Option<Box<FileLine>>,
 }
 
 #[derive(Clone, Debug)]
@@ -137,7 +137,7 @@ fn list_info(path: &PathBuf, sname: String, wh: &mut Width, fl: &Flags) -> File 
 		ext,
 		len,
 		dir,
-		line: Some(FileLine {
+		line: Some(Box::new(FileLine {
 			time: time::unix(&md, fl),
 			size,
 			size_str,
@@ -147,7 +147,7 @@ fn list_info(path: &PathBuf, sname: String, wh: &mut Width, fl: &Flags) -> File 
 			perm: format!("{}{}", kind_fmt(lnk, dir, md.nlink()), permissions_fmt(rwx)),
 			lnk,
 			xattr,
-		}),
+		})),
 	};
 }
 
