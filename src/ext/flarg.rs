@@ -64,9 +64,10 @@ struct Flag {
 ///     .option("bar b", "default")
 ///     .flag("foo f");
 /// ```
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct ArgParser {
-	helphead: Option<String>,
+	help_head: Option<String>,
+	help_args: Option<Vec<String>>,
 	version: Option<String>,
 
 	options: Vec<Opt>,
@@ -95,23 +96,8 @@ impl ArgParser {
 	/// Creates a new ArgParser instance.
 	pub fn new() -> ArgParser {
 		ArgParser {
-			helphead: None,
-			version: None,
-
-			options: Vec::new(),
-			option_map: HashMap::new(),
-
-			flags: Vec::new(),
-			flag_map: HashMap::new(),
-
-			commands: Vec::new(),
-			command_map: HashMap::new(),
-
 			app_path: std::env::args().next(),
-			args: Vec::new(),
-
-			cmd_name: None,
-			cmd_parser: None,
+			..Default::default()
 		}
 	}
 
@@ -128,7 +114,7 @@ impl ArgParser {
 	where
 		S: Into<String>,
 	{
-		self.helphead = Some(text.into());
+		self.help_head = Some(text.into());
 		self
 	}
 
@@ -270,14 +256,6 @@ impl ArgParser {
 				return Err(Error::InvalidUnicode);
 			}
 		}
-		let mut stream = ArgStream::new(strings);
-		self.parse_argstream(&mut stream)?;
-		Ok(())
-	}
-
-	/// Parse a vector of arguments.
-	pub fn parse_vec(&mut self, args: Vec<&str>) -> Result<(), Error> {
-		let strings = args.iter().map(|s| s.to_string()).collect();
 		let mut stream = ArgStream::new(strings);
 		self.parse_argstream(&mut stream)?;
 		Ok(())

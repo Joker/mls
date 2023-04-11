@@ -95,17 +95,21 @@ OPTIONS:
 		group: parser.found("g"),
 		lvl,
 		list_format: false,
-		tree_format: false,
+		tree_format: tree.0 || tree.1 || tree.2 || tree.3,
 	};
 	match &parser.app_path {
-		Some(p) => match p.rsplit_once("/").unwrap_or(("","")).1 {
+		Some(p) => match p.rsplit("/").next().unwrap_or("") {
+			"ll" => fl.long = true,
 			"la" => fl.all = true,
 			"lla" | "lal" => {
 				fl.long = true;
 				fl.all = true;
 			}
-			"ll" => fl.long = true,
 			"lt" => fl.tree_format = true,
+			"ltl" | "llt" => {
+				fl.tree_format = true;
+				fl.long = true;
+			}
 			"lsd" => fl.dir_only = true,
 			_ => (),
 		},
@@ -113,13 +117,12 @@ OPTIONS:
 	};
 
 	fl.list_format = fl.long || fl.Size_sort || fl.time_sort || fl.group;
-	fl.tree_format = tree.0 || tree.1 || tree.2 || tree.3;
-	
+
 	let dirs = if parser.args.len() > 0 {
 		parser.args
 	} else {
 		vec![".".to_string()]
 	};
-	
+
 	(fl, dirs)
 }
