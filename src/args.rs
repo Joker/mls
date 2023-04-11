@@ -1,5 +1,3 @@
-use std::env;
-
 use crate::ext::flarg::ArgParser;
 
 pub const TREE_LEVEL: usize = 2;
@@ -23,8 +21,6 @@ pub struct Flags {
 }
 
 pub fn args_init() -> (Flags, Vec<String>) {
-	let args: Vec<String> = env::args().collect();
-
 	let mut parser = ArgParser::new()
 		.helptext(
 			r#"USAGE:
@@ -67,13 +63,19 @@ OPTIONS:
 		err.exit();
 	}
 
-	let lvl = if parser.found("2") {
+	let tree = (
+		parser.found("2"),
+		parser.found("3"),
+		parser.found("T"),
+		parser.found("L"),
+	);
+	let lvl = if tree.0 {
 		2
-	} else if parser.found("3") {
+	} else if tree.1 {
 		3
-	} else if parser.found("T") {
+	} else if tree.2 {
 		999
-	} else if parser.found("L") {
+	} else if tree.3 {
 		parser.value("L").parse::<usize>().unwrap_or(TREE_LEVEL)
 	} else {
 		TREE_LEVEL
@@ -95,11 +97,8 @@ OPTIONS:
 		list_format: false,
 		tree_format: false,
 	};
-	fl.list_format = fl.long || fl.Size_sort || fl.time_sort || fl.group;
-	fl.tree_format = parser.found("2") || parser.found("3") || parser.found("T") || parser.found("L");
-
-	match args[0].rsplit("/").next() {
-		Some(p) => match p {
+	match &parser.app_name {
+		Some(p) => match p.rsplit_once("/").unwrap_or(("","")).1 {
 			"la" => fl.all = true,
 			"lla" | "lal" => {
 				fl.long = true;
@@ -113,10 +112,15 @@ OPTIONS:
 		None => (),
 	};
 
+	fl.list_format = fl.long || fl.Size_sort || fl.time_sort || fl.group;
+	fl.tree_format = tree.0 || tree.1 || tree.2 || tree.3;
+	
+	println!("{:#?}", parser);
 	let dirs = if parser.args.len() > 0 {
 		parser.args
 	} else {
 		vec![".".to_string()]
 	};
+	
 	(fl, dirs)
 }

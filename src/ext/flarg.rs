@@ -88,6 +88,7 @@ impl Error {
 ///     .option("bar b", "default")
 ///     .flag("foo f");
 /// ```
+#[derive(Debug)]
 pub struct ArgParser {
 	helptext: Option<String>,
 	version: Option<String>,
@@ -97,7 +98,9 @@ pub struct ArgParser {
 	flag_map: HashMap<String, usize>,
 	commands: Vec<ArgParser>,
 	command_map: HashMap<String, usize>,
-	callback: Option<fn(&str, &ArgParser)>,
+	// callback: Option<fn(&str, &ArgParser)>,
+
+	pub app_name: Option<String>,
 
 	/// Stores positional arguments.
 	pub args: Vec<String>,
@@ -118,6 +121,7 @@ impl ArgParser {
 		ArgParser {
 			helptext: None,
 			version: None,
+			app_name: std::env::args().next(),
 			args: Vec::new(),
 			options: Vec::new(),
 			option_map: HashMap::new(),
@@ -125,7 +129,7 @@ impl ArgParser {
 			flag_map: HashMap::new(),
 			commands: Vec::new(),
 			command_map: HashMap::new(),
-			callback: None,
+			// callback: None,
 			cmd_name: None,
 			cmd_parser: None,
 			cmd_help: false,
@@ -241,10 +245,10 @@ impl ArgParser {
 	/// Registers a callback function on a command parser. If the command is found the
 	/// function will be called and passed the command name and a reference to the
 	/// command's `ArgParser` instance.
-	pub fn callback(mut self, f: fn(&str, &ArgParser)) -> Self {
-		self.callback = Some(f);
-		self
-	}
+	// pub fn callback(mut self, f: fn(&str, &ArgParser)) -> Self {
+	// 	self.callback = Some(f);
+	// 	self
+	// }
 
 	/// Returns the value of the named option. Returns the default value registered
 	/// with the option if the option was not found. Any of the option's registered
@@ -324,86 +328,87 @@ impl ArgParser {
 		let mut is_first_arg = true;
 
 		while argstream.has_next() {
-			let arg = argstream.next();
-
-			if arg == "--" {
-				while argstream.has_next() {
-					self.args.push(argstream.next());
-				}
-			} else if arg.starts_with("--") {
-				if arg.contains("=") {
-					self.handle_equals_opt(&arg)?;
-				} else {
-					self.handle_long_opt(&arg, argstream)?;
-				}
-			} else if arg.starts_with("-") {
-				if arg == "-" {
-					self.args.push(arg);
-				} else if arg.contains("=") {
-					self.handle_equals_opt(&arg)?;
-				} else {
-					self.handle_short_opt(&arg, argstream)?;
-				}
-			} else if is_first_arg && self.command_map.contains_key(&arg) {
-				let index = self.command_map.get(&arg).unwrap();
-				let mut cmd_parser = self.commands.remove(*index);
-				self.command_map.clear();
-				self.commands.clear();
-				cmd_parser.parse_argstream(argstream)?;
-				if let Some(callback) = cmd_parser.callback {
-					callback(&arg, &cmd_parser);
-				}
-				self.cmd_name = Some(arg);
-				self.cmd_parser = Some(Box::new(cmd_parser));
-			} else if is_first_arg && self.cmd_help && arg == "help" {
-				if argstream.has_next() {
-					let name = argstream.next();
-					if let Some(index) = self.command_map.get(&name) {
-						let cmd_parser = &mut self.commands[*index];
-						let helptext = cmd_parser.helptext.as_deref().unwrap_or("").trim();
-						println!("{}", helptext);
-						std::process::exit(0);
-					} else {
-						return Err(Error::InvalidName(format!(
-							"'{}' is not a recognised command name",
-							&name
-						)));
+			match argstream.next().as_str() {
+				"--" => {
+					while argstream.has_next() {
+						self.args.push(argstream.next());
 					}
-				} else {
-					return Err(Error::MissingHelpArg);
 				}
-			} else {
-				self.args.push(arg);
+				arg if arg.starts_with("--") => match arg.contains("=") {
+					true => self.handle_equals_opt(&arg)?,
+					false => self.handle_long_opt(&arg, argstream)?,
+				},
+				arg if arg.starts_with("-") => match arg {
+					"-" => self.args.push(arg.to_string()),
+					a if a.contains("=") => self.handle_equals_opt(arg)?,
+					_ => self.handle_short_opt(&arg, argstream)?,
+				},
+				arg if is_first_arg && self.command_map.contains_key(arg) => {
+					let mut cp = self.commands.remove(*self.command_map.get(arg).unwrap());
+					self.command_map.clear();
+					self.commands.clear();
+
+					cp.parse_argstream(argstream)?;
+					// if let Some(callback) = cp.callback {
+					// 	callback(&arg, &cp);
+					// }
+					self.cmd_name = Some(arg.to_string());
+					self.cmd_parser = Some(Box::new(cp));
+				}
+				"help" if is_first_arg && self.cmd_help => {
+					if !argstream.has_next() {
+						return Err(Error::MissingHelpArg);
+					}
+
+					let name = argstream.next();
+					match self.command_map.get(&name) {
+						Some(i) => {
+							let cp = &mut self.commands[*i];
+							let helptext = cp.helptext.as_deref().unwrap_or("").trim();
+							println!("{}", helptext);
+							std::process::exit(0);
+						}
+						None => {
+							return Err(Error::InvalidName(format!(
+								"'{}' is not a recognised command name",
+								&name
+							)));
+						}
+					}
+				}
+				arg => self.args.push(arg.to_string()),
 			}
 
 			is_first_arg = false;
 		}
-
 		Ok(())
 	}
 
 	fn handle_long_opt(&mut self, arg: &str, argstream: &mut ArgStream) -> Result<(), Error> {
 		if let Some(index) = self.flag_map.get(&arg[2..]) {
 			self.flags[*index].count += 1;
-		} else if let Some(index) = self.option_map.get(&arg[2..]) {
-			if argstream.has_next() {
-				self.options[*index].values.push(argstream.next());
-			} else {
+			return Ok(());
+		}
+		if let Some(index) = self.option_map.get(&arg[2..]) {
+			if !argstream.has_next() {
 				return Err(Error::MissingValue(format!("missing value for {}", arg)));
 			}
-		} else if arg == "--help" && self.helptext.is_some() {
+
+			self.options[*index].values.push(argstream.next());
+			return Ok(());
+		}
+
+		if arg == "--help" && self.helptext.is_some() {
 			println!("{}", self.helptext.as_ref().unwrap().trim());
 			std::process::exit(0);
-		} else if arg == "--version" && self.version.is_some() {
+		}
+		if arg == "--version" && self.version.is_some() {
 			println!("{}", self.version.as_ref().unwrap().trim());
 			std::process::exit(0);
-		} else {
-			return Err(Error::InvalidName(format!(
-				"{} is not a recognised flag or option name",
-				arg
-			)));
 		}
-		Ok(())
+		return Err(Error::InvalidName(format!(
+			"{arg} is not a recognised flag or option name",
+		)));
 	}
 
 	fn handle_short_opt(&mut self, arg: &str, argstream: &mut ArgStream) -> Result<(), Error> {
@@ -411,9 +416,7 @@ impl ArgParser {
 			if let Some(index) = self.flag_map.get(&c.to_string()) {
 				self.flags[*index].count += 1;
 			} else if let Some(index) = self.option_map.get(&c.to_string()) {
-				if argstream.has_next() {
-					self.options[*index].values.push(argstream.next());
-				} else {
+				if !argstream.has_next() {
 					let msg = if arg.chars().count() > 2 {
 						format!("missing value for '{}' in {}", c, arg)
 					} else {
@@ -421,6 +424,8 @@ impl ArgParser {
 					};
 					return Err(Error::MissingValue(msg));
 				}
+
+				self.options[*index].values.push(argstream.next());
 			} else if c == 'h' && self.helptext.is_some() {
 				println!("{}", self.helptext.as_ref().unwrap().trim());
 				std::process::exit(0);
@@ -428,10 +433,9 @@ impl ArgParser {
 				println!("{}", self.version.as_ref().unwrap().trim());
 				std::process::exit(0);
 			} else {
-				let msg = if arg.chars().count() > 2 {
-					format!("'{}' in {} is not a recognised flag or option name", c, arg)
-				} else {
-					format!("{} is not a recognised flag or option name", arg)
+				let msg = match arg.chars().count() > 2 {
+					true => format!("'{}' in {} is not a recognised flag or option name", c, arg),
+					false => format!("{} is not a recognised flag or option name", arg),
 				};
 				return Err(Error::InvalidName(msg));
 			}
@@ -447,14 +451,13 @@ impl ArgParser {
 		if let Some(index) = self.option_map.get(name.trim_start_matches('-')) {
 			if value == "" {
 				return Err(Error::MissingValue(format!("missing value for {}", name)));
-			} else {
-				self.options[*index].values.push(value.to_string());
-				return Ok(());
 			}
+
+			self.options[*index].values.push(value.to_string());
+			return Ok(());
 		}
 		return Err(Error::InvalidName(format!(
-			"{} is not a recognised option name",
-			name
+			"{name} is not a recognised option name"
 		)));
 	}
 }
@@ -484,12 +487,14 @@ impl ArgStream {
 }
 
 // We create a single Opt instance for each registered option, i.e. each call to `.option()`.
+#[derive(Debug)]
 struct Opt {
 	values: Vec<String>,
 	default: String,
 }
 
 // We create a single Flag instance for each registered flag, i.e. each call to `.flag()`.
+#[derive(Debug)]
 struct Flag {
 	count: usize,
 }
