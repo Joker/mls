@@ -1,7 +1,10 @@
-use crate::{color::{BLACK_H, BLACK_L, GREEN, WHITE, XT23, XT42}, Width};
+use crate::{
+	color::{BLACK_H, BLACK_L, GREEN, WHITE, XT23, XT42},
+	Width,
+};
 
 use super::File;
- 
+
 pub fn size_fmt(f: &File, w: &Width, bitsize: bool) -> String {
 	let line = f.line.as_ref().unwrap();
 	if f.dir && (line.lnk || line.size == 0) {
@@ -14,18 +17,8 @@ pub fn size_fmt(f: &File, w: &Width, bitsize: bool) -> String {
 		return format!("{WHITE}{: >nsz$}", line.size, nsz = w.szn);
 	}
 	match line.suf.as_str() {
-		"M" | "G" => format!(
-			"{XT42}{: >nsz$}{XT23}{}",
-			line.size_str,
-			line.suf,
-			nsz = w.szn - 1
-		),
-		"k" => format!(
-			"{GREEN}{: >nsz$}{XT23}{}",
-			line.size_str,
-			line.suf,
-			nsz = w.szn - 1
-		),
+		"M" | "G" => format!("{XT42}{: >nsz$}{XT23}{}", line.size_str, line.suf, nsz = w.szn - 1),
+		"k" => format!("{GREEN}{: >nsz$}{XT23}{}", line.size_str, line.suf, nsz = w.szn - 1),
 		_ => format!("{GREEN}{: >nsz$}", line.size_str, nsz = w.szn),
 	}
 }

@@ -28,8 +28,7 @@ fn columns_width(files: &Vec<File>, stack_size: usize) -> (usize, Vec<usize>) {
 fn grid_size(names: &Vec<File>) -> (usize, Vec<usize>) {
 	let (term_width, _) = terminal_size().unwrap();
 
-	let mut stack =
-		names.len() / (term_width / names.iter().map(|f| f.len).max().unwrap_or(term_width / 2));
+	let mut stack = names.len() / (term_width / names.iter().map(|f| f.len).max().unwrap_or(term_width / 2));
 
 	if stack < 2 && names.iter().fold(0, |acc, e| acc + e.len) <= term_width {
 		return (1, Vec::new());

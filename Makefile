@@ -6,9 +6,18 @@ link:
 	ln -s ./ls ~/bin/ll
 	ln -s ./ls ~/bin/la
 	ln -s ./ls ~/bin/lt
+	ln -s ./ls ~/bin/ltl
+	ln -s ./ls ~/bin/llt
 	ln -s ./ls ~/bin/lla
 	ln -s ./ls ~/bin/lal
 	ln -s ./ls ~/bin/lsd
 
 del:
-	rm ~/bin/ll ~/bin/la ~/bin/lt ~/bin/lla ~/bin/lal ~/bin/lsd
+	rm ~/bin/ll
+	rm ~/bin/la
+	rm ~/bin/lt
+	rm ~/bin/ltl
+	rm ~/bin/llt
+	rm ~/bin/lla
+	rm ~/bin/lal
+	rm ~/bin/lsd

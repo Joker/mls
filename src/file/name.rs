@@ -24,14 +24,12 @@ pub fn ext(path: &Path) -> String {
 
 pub fn ext_group(ext: String) -> (String, u8) {
 	match ext.as_str() {
-		"png" | "jpg" | "jpeg" | "gif" | "svg" | "webp" | "ico" | "bmp" | "tiff" => {
-			(format!("1_{ext}"), 1)
-		}
-		"7z" | "zip" | "tar" | "gz" | "bz2" | "rar" | "tgz" | "xz" | "txz" => {
-			(format!("2_{ext}"), 2)
-		}
-		"djvu" | "doc" | "docx" | "dotx" | "odp" | "odt" | "pdf" | "ppt" | "pptx" | "rtf"
-		| "xls" | "xlsx" => (format!("3_{ext}"), 3),
+		"png" | "jpg" | "jpeg" | "gif" | "svg" | "webp" | "ico" | "bmp" | "tiff" => (format!("1_{ext}"), 1),
+
+		"7z" | "zip" | "tar" | "gz" | "bz2" | "rar" | "tgz" | "xz" | "txz" => (format!("2_{ext}"), 2),
+
+		"djvu" | "doc" | "docx" | "dotx" | "odp" | "odt" | "pdf" | "ppt" | "pptx" | "rtf" | "xls"
+		| "xlsx" => (format!("3_{ext}"), 3),
 
 		"html" | "css" | "scss" | "sass" | "js" | "jsx" | "ts" | "tsx" | "go" | "rs" | "java" => {
 			(format!("4a_{ext}"), 4)

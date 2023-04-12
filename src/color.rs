@@ -37,4 +37,3 @@ pub static YEAR: &str = "\x1b[38;5;187m";
 // pub static WEK1: &str = "\x1b[38;5;187m";
 // pub static WEK4: &str = "\x1b[38;5;186m";
 // pub static YEAR: &str = "\x1b[38;5;185m";
-

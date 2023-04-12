@@ -29,11 +29,7 @@ pub fn unix(md: &Metadata, fl: &Flags) -> u64 {
 }
 
 pub fn date_time_fmt(unix_time: u64) -> String {
-	let now = SystemTime::now()
-		.duration_since(UNIX_EPOCH)
-		.unwrap()
-		.as_secs()
-		+ TIMEZONE;
+	let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() + TIMEZONE;
 
 	let (date, month, year, hours, minutes, _) = seconds_to_datetime(unix_time);
 
@@ -50,7 +46,7 @@ pub fn date_time_fmt(unix_time: u64) -> String {
 	if unix_time > now - 15768000 {
 		return format!(
 			"{}{: >2} {} {:0>2}:{:0>2}",
-			cl, date, month_name[month], hours, minutes,
+			cl, date, month_name[month], hours, minutes
 		);
 	}
 

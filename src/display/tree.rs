@@ -62,10 +62,6 @@ pub fn list(path: &Path, fl: &Flags, w: &mut Width, lvl: usize) -> Vec<File> {
 pub fn print(files: &Vec<File>) {
 	println!(
 		"{}",
-		files
-			.iter()
-			.map(|f| f.name.clone())
-			.collect::<Vec<_>>()
-			.join("\n")
+		files.iter().map(|f| f.name.clone()).collect::<Vec<_>>().join("\n")
 	)
 }

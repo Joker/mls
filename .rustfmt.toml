@@ -1,0 +1,15 @@
+tab_spaces = 4
+hard_tabs = true
+reorder_imports = true
+newline_style = "Unix"
+max_width = 110
+fn_call_width = 70
+single_line_if_else_max_width = 90
+array_width = 70
+chain_width = 70
+# use_small_heuristics = "Max"
+
+fn_args_layout = "Compressed"
+use_field_init_shorthand = true
+use_try_shorthand = true
+edition = "2021"

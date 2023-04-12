@@ -31,11 +31,7 @@ pub fn seconds_to_datetime(unux_time: u64) -> (u64, usize, u64, u64, u64, u64) {
 
 	// Calculate the year and find out if it's leap
 	let year = 1601 + q * 400 + c * 100 + d * 4 + a;
-	let leap = if year % 400 == 0 || (year % 4 == 0 && year % 100 != 0) {
-		1
-	} else {
-		0
-	};
+	let leap = if year % 400 == 0 || (year % 4 == 0 && year % 100 != 0) { 1 } else { 0 };
 
 	// Calculate the day of the year and the time
 	let yday = sec / 86400;
