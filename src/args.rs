@@ -22,45 +22,33 @@ pub struct Flags {
 
 pub fn args_init() -> (Flags, Vec<String>) {
 	let mut parser = ArgParser::new()
-		.helptext(
-			r#"USAGE:
-	ls [-alStfbcuUgd] [file ...]
-OPTIONS:
-	-a		Include directory entries whose names begin with a dot (`.`).
-	-l		List files in the long format.
-	-S		Sort by size.
-	-t		Sort by time.
-	-f		Absolute path for symbolic link in the list.
-	-b		List file sizes in bytes.
-	-c		Use time when file status was last changed.
-	-u		Use time of last access, instead of time of last modification of the file.
-	-U		Use time when file was created.
-	-g		Display the group name.
-	-d		List of directories only.
-	-2		Recurse into directories as a tree. Limit the depth 2.
-	-3		Recurse into directories as a tree. Limit the depth 3.
-	-T		Recurse into directories as a tree.
-	-L DEPTH	Recurse into directories as a tree. DEPTH - limit the depth of recursion.
-	"#,
-		)
-		.flag("a")
-		.flag("l")
-		.flag("S")
-		.flag("t")
-		.flag("f")
-		.flag("b h")
-		.flag("c")
-		.flag("u")
-		.flag("U")
-		.flag("g")
-		.flag("d")
-		.flag("2")
-		.flag("3")
-		.flag("T")
-		.option("L", TREE_LEVEL.to_string().as_str());
+		.helptext("USAGE:\n\tls [-alStfbcuUgd] [file ...]\nOPTIONS:")
+		.flag_with("a", "Include directory entries whose names begin with a dot (`.`).")
+		.flag_with("l", "List files in the long format.")
+		.flag_with("S", "Sort by size.")
+		.flag_with("t", "Sort by time.")
+		.flag_with("f", "Absolute path for symbolic link in the list.")
+		.flag_with("b h", "List file sizes in bytes.")
+		.flag_with("c", "Use time when file status was last changed.")
+		.flag_with("u", "Use time of last access.")
+		.flag_with("U", "Use time when file was created.")
+		.flag_with("g", "Display the group name.")
+		.flag_with("d", "List of directories only.")
+		.flag_with("help", "Show list of command-line options.")
+		.flag_with("2", "Recurse into directories as a tree. Limit the depth 2.")
+		.flag_with("3", "Recurse into directories as a tree. Limit the depth 3.")
+		.flag_with("T", "Recurse into directories as a tree.")
+		.option_with(
+			"L",
+			TREE_LEVEL.to_string().as_str(),
+			"Recurse into directories as a tree. DEPTH - limit the depth of recursion.",
+		);
 
 	if let Err(err) = parser.parse() {
 		err.exit();
+	}
+	if parser.found("help") {
+		parser.print_help();
 	}
 
 	let tree = (
@@ -118,11 +106,6 @@ OPTIONS:
 
 	fl.list_format = fl.long || fl.Size_sort || fl.time_sort || fl.group;
 
-	let dirs = if parser.args.len() > 0 {
-		parser.args
-	} else {
-		vec![".".to_string()]
-	};
-
+	let dirs = if parser.args.len() > 0 { parser.args } else { vec![".".to_string()] };
 	(fl, dirs)
 }

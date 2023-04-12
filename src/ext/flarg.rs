@@ -46,12 +46,14 @@ use std::fmt;
 struct Opt {
 	values: Vec<String>,
 	default: String,
+	desc: (String, Option<String>),
 }
 
 // We create a single Flag instance for each registered flag, i.e. each call to `.flag()`.
 #[derive(Debug)]
 struct Flag {
 	count: usize,
+	desc: (String, Option<String>),
 }
 
 /// An ArgParser instance can be intialized using the builder pattern.
@@ -67,7 +69,6 @@ struct Flag {
 #[derive(Debug, Default)]
 pub struct ArgParser {
 	help_head: Option<String>,
-	help_args: Option<Vec<String>>,
 	version: Option<String>,
 
 	options: Vec<Opt>,
@@ -92,6 +93,17 @@ pub struct ArgParser {
 	pub cmd_parser: Option<Box<ArgParser>>,
 }
 
+fn dash(s: &str) -> String {
+	let mut out = Vec::new();
+	for alias in s.split_whitespace() {
+		out.push(match alias.chars().count() {
+			1 => format!("-{}", alias),
+			_ => format!("--{}", alias),
+		});
+	}
+	out.join(", ")
+}
+
 impl ArgParser {
 	/// Creates a new ArgParser instance.
 	pub fn new() -> ArgParser {
@@ -99,6 +111,28 @@ impl ArgParser {
 			app_path: std::env::args().next(),
 			..Default::default()
 		}
+	}
+
+	pub fn print_help(&self) {
+		println!("{}", self.help_head.as_ref().unwrap().trim());
+		self.flags.iter().for_each(|f| {
+			match f.desc.1.as_ref() {
+				Some(str) => println!("  {}\n         {}", dash(f.desc.0.as_str()), str),
+				_ => println!("  {}\n", dash(f.desc.0.as_str())),
+			};
+		});
+		self.options.iter().for_each(|f| {
+			match f.desc.1.as_ref() {
+				Some(str) => println!(
+					"  {0}={1}\n         {2} (default: {1})",
+					dash(f.desc.0.as_str()),
+					f.default,
+					str
+				),
+				_ => println!("  {0}={1}\n         default: {1}", dash(f.desc.0.as_str()), f.default),
+			};
+		});
+		std::process::exit(0);
 	}
 
 	/// Sets the parser's helptext string. Supplying a helptext string activates support
@@ -148,6 +182,29 @@ impl ArgParser {
 		self.options.push(Opt {
 			values: Vec::new(),
 			default: String::from(default),
+			desc: (name.into(), None),
+		});
+		let index = self.options.len() - 1;
+		for alias in name.split_whitespace() {
+			self.option_map.insert(alias.to_string(), index);
+		}
+		self
+	}
+
+	/// Registers a new option. The `name` parameter accepts an unlimited number of
+	/// space-separated aliases and single-character shortcuts. The `default` value
+	/// will be used if the option is not found.
+	///
+	/// ```
+	/// # use flarg::ArgParser;
+	/// let mut parser = ArgParser::new()
+	///     .option("foo f", "default value");
+	/// ```
+	pub fn option_with(mut self, name: &str, default: &str, description: &str) -> Self {
+		self.options.push(Opt {
+			values: Vec::new(),
+			default: String::from(default),
+			desc: (name.into(), Some(description.into())),
 		});
 		let index = self.options.len() - 1;
 		for alias in name.split_whitespace() {
@@ -165,7 +222,30 @@ impl ArgParser {
 	///     .flag("foo f");
 	/// ```
 	pub fn flag(mut self, name: &str) -> Self {
-		self.flags.push(Flag { count: 0 });
+		self.flags.push(Flag {
+			count: 0,
+			desc: (name.into(), None),
+		});
+		let index = self.flags.len() - 1;
+		for alias in name.split_whitespace() {
+			self.flag_map.insert(alias.to_string(), index);
+		}
+		self
+	}
+
+	/// Registers a new flag with description. The `name` parameter accepts an unlimited number of
+	/// space-separated aliases and single-character shortcuts.
+	///
+	/// ```
+	/// # use flarg::ArgParser;
+	/// let mut parser = ArgParser::new()
+	///     .flag("foo f");
+	/// ```
+	pub fn flag_with(mut self, name: &str, description: &str) -> Self {
+		self.flags.push(Flag {
+			count: 0,
+			desc: (name.into(), Some(description.into())),
+		});
 		let index = self.flags.len() - 1;
 		for alias in name.split_whitespace() {
 			self.flag_map.insert(alias.to_string(), index);
@@ -359,9 +439,7 @@ impl ArgParser {
 			return Ok(());
 		}
 
-		return Err(Error::InvalidName(format!(
-			"{name} is not a recognised option name"
-		)));
+		return Err(Error::InvalidName(format!("{name} is not a recognised option name")));
 	}
 }
 
@@ -375,10 +453,7 @@ struct ArgStream {
 
 impl ArgStream {
 	fn new(args: Vec<String>) -> ArgStream {
-		ArgStream {
-			args: args,
-			index: 0,
-		}
+		ArgStream { args, index: 0 }
 	}
 
 	fn has_next(&self) -> bool {
