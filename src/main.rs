@@ -37,7 +37,7 @@ fn main() {
 			path if path.is_dir() => {
 				let file_list;
 				if flags.tree_format {
-					file_list = tree::list(path, &flags, &mut width, 0);
+					file_list = tree::list(path, &flags, &mut width, 0, 0);
 				} else {
 					file_list = file::list(path, &flags, &mut width);
 				}

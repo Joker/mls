@@ -10,12 +10,20 @@ use crate::{
 pub static END: &str = "└──";
 pub static LEAF: &str = "├──";
 pub static TRUNK: &str = "│  ";
+pub static GROUND: &str = "   ";
 
-pub fn trunc(width: usize) -> String {
-	(0..width).into_iter().map(|_| TRUNK).collect()
+pub fn trunc(width: usize, last_dir: usize) -> String {
+	if last_dir == 0 {
+		return (0..width).into_iter().map(|_| TRUNK).collect();
+	}
+	format!(
+		"{}{}",
+		(0..width).into_iter().map(|_| GROUND).collect::<String>(),
+		(0..(width - last_dir)).into_iter().map(|_| TRUNK).collect::<String>(),
+	)
 }
 
-pub fn list(path: &Path, fl: &Flags, w: &mut Width, lvl: usize) -> Vec<File> {
+pub fn list(path: &Path, fl: &Flags, w: &mut Width, lvl: usize, last_dir: usize) -> Vec<File> {
 	let mut out = Vec::new();
 	if fl.lvl <= lvl {
 		return out;
@@ -36,23 +44,25 @@ pub fn list(path: &Path, fl: &Flags, w: &mut Width, lvl: usize) -> Vec<File> {
 
 	if lvl == 0 {
 		let mut f = file::info(&path.to_path_buf(), &fl, w).unwrap();
-		f.name = format!("{WHITE}{}{}", basepath(path), f.name);
+		f.name = format!("{WHITE} {}{}", basepath(path), f.name);
 		out.push(f);
 	}
 
 	let last = files.iter().last().unwrap();
 	files.iter().for_each(|f| {
+		let last_eq = std::ptr::eq(f, last);
 		let mut fclone = f.clone();
 		fclone.name = format!(
 			"{WHITE}{}{} {}",
-			trunc(lvl),
-			if std::ptr::eq(f, last) { END } else { LEAF },
+			trunc(lvl, last_dir),
+			if last_eq { END } else { LEAF },
 			f.name
 		);
 		out.push(fclone);
 
 		if f.dir {
-			let subt = list(path.join(Path::new(&f.sname)).as_path(), fl, w, lvl + 1);
+			let ld = if last_eq { last_dir + 1 } else { last_dir };
+			let subt = list(path.join(Path::new(&f.sname)).as_path(), fl, w, lvl + 1, ld);
 			out.extend(subt);
 		}
 	});

@@ -153,7 +153,7 @@ fn list_info(path: &PathBuf, sname: String, wh: &mut Width, fl: &Flags) -> File 
 
 pub fn info(path: &PathBuf, fl: &Flags, wh: &mut Width) -> Option<File> {
 	let sname = filename(path);
-	let dot = sname.starts_with('.') && sname.len() > 1;
+	let dot = sname.starts_with('.');
 
 	if !dot || fl.all {
 		let file = match fl.list_format {

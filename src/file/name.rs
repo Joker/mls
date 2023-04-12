@@ -49,7 +49,10 @@ pub fn ext_group(ext: String) -> (String, u8) {
 pub fn filename(path: &Path) -> String {
 	match path.file_name() {
 		Some(name) => name.to_string_lossy().to_string(),
-		_ => path.display().to_string(),
+		_ => match path.canonicalize().unwrap().as_path().file_name() {
+			Some(name) => name.to_string_lossy().to_string(),
+			_ => path.display().to_string(),
+		},
 	}
 }
 
