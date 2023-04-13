@@ -1,41 +1,5 @@
-#![allow(dead_code)]
 //! A minimalist library for parsing command line arguments.
-//!
-//! https://github.com/dmulholl/arguably
-//!
-//! ## Features
-//!
-//! * Long-form boolean flags with single-character shortcuts: `--flag`, `-f`.
-//! * Long-form string-valued options with single-character shortcuts: `--option <arg>`, `-o <arg>`.
-//! * Condensed short-form options: `-abc <arg> <arg>`.
-//! * Automatic `--help` and `--version` flags.
-//! * Support for multivalued options.
-//! * Support for git-style command interfaces with arbitrarily-nested commands.
-//!
-//! ## Example
-//!
-//! ```
-//! # use flarg::ArgParser;
-//! let mut parser = ArgParser::new()
-//!     .helptext("Usage: foobar...")
-//!     .version("1.0")
-//!     .option("bar b", "default")
-//!     .flag("foo f");
-//!
-//! if let Err(err) = parser.parse() {
-//!     err.exit();
-//! }
-//!
-//! if parser.found("foo") {
-//!     println!("Flag --foo/-f found.");
-//! }
-//!
-//! println!("Option --bar/-b has value: {}", parser.value("bar"));
-//!
-//! for arg in parser.args {
-//!     println!("Arg: {}", arg);
-//! }
-//! ```
+// mod from https://github.com/dmulholl/arguably
 
 use std::collections::HashMap;
 use std::error;
@@ -57,19 +21,9 @@ struct Flag {
 }
 
 /// An ArgParser instance can be intialized using the builder pattern.
-///
-/// ```
-/// # use flarg::ArgParser;
-/// let mut parser = ArgParser::new()
-///     .helptext("Usage: appname...")
-///     .version("1.0")
-///     .option("bar b", "default")
-///     .flag("foo f");
-/// ```
 #[derive(Debug, Default)]
 pub struct ArgParser {
 	help_head: Option<String>,
-	version: Option<String>,
 
 	options: Vec<Opt>,
 	option_map: HashMap<String, usize>,
@@ -77,20 +31,11 @@ pub struct ArgParser {
 	flags: Vec<Flag>,
 	flag_map: HashMap<String, usize>,
 
-	commands: Vec<ArgParser>,
-	command_map: HashMap<String, usize>,
-
 	/// Stores application path.
 	pub app_path: Option<String>,
 
 	/// Stores positional arguments.
 	pub args: Vec<String>,
-
-	/// Stores the command name, if a command was found.
-	pub cmd_name: Option<String>,
-
-	/// Stores the command's `ArgParser` instance, if a command was found.
-	pub cmd_parser: Option<Box<ArgParser>>,
 }
 
 fn dash(s: &str) -> String {
@@ -135,15 +80,7 @@ impl ArgParser {
 		std::process::exit(0);
 	}
 
-	/// Sets the parser's helptext string. Supplying a helptext string activates support
-	/// for an automatic `--help` flag, also a `-h` shortcut if not registered by another
-	/// option.
-	///
-	/// ```
-	/// # use flarg::ArgParser;
-	/// let mut parser = ArgParser::new()
-	///     .helptext("Usage: appname...");
-	/// ```
+	/// Sets the parser's helptext string.
 	pub fn helptext<S>(mut self, text: S) -> Self
 	where
 		S: Into<String>,
@@ -152,54 +89,7 @@ impl ArgParser {
 		self
 	}
 
-	/// Sets the parser's version string. Supplying a version string activates support
-	/// for an automatic `--version` flag, also a `-v` shortcut if not registered by another
-	/// option.
-	///
-	/// ```
-	/// # use flarg::ArgParser;
-	/// let mut parser = ArgParser::new()
-	///     .version("1.0");
-	/// ```
-	pub fn version<S>(mut self, text: S) -> Self
-	where
-		S: Into<String>,
-	{
-		self.version = Some(text.into());
-		self
-	}
-
-	/// Registers a new option. The `name` parameter accepts an unlimited number of
-	/// space-separated aliases and single-character shortcuts. The `default` value
-	/// will be used if the option is not found.
-	///
-	/// ```
-	/// # use flarg::ArgParser;
-	/// let mut parser = ArgParser::new()
-	///     .option("foo f", "default value");
-	/// ```
-	pub fn option(mut self, name: &str, default: &str) -> Self {
-		self.options.push(Opt {
-			values: Vec::new(),
-			default: String::from(default),
-			desc: (name.into(), None),
-		});
-		let index = self.options.len() - 1;
-		for alias in name.split_whitespace() {
-			self.option_map.insert(alias.to_string(), index);
-		}
-		self
-	}
-
-	/// Registers a new option. The `name` parameter accepts an unlimited number of
-	/// space-separated aliases and single-character shortcuts. The `default` value
-	/// will be used if the option is not found.
-	///
-	/// ```
-	/// # use flarg::ArgParser;
-	/// let mut parser = ArgParser::new()
-	///     .option("foo f", "default value");
-	/// ```
+	/// Registers a new option with description.
 	pub fn option_with(mut self, name: &str, default: &str, description: &str) -> Self {
 		self.options.push(Opt {
 			values: Vec::new(),
@@ -213,34 +103,7 @@ impl ArgParser {
 		self
 	}
 
-	/// Registers a new flag. The `name` parameter accepts an unlimited number of
-	/// space-separated aliases and single-character shortcuts.
-	///
-	/// ```
-	/// # use flarg::ArgParser;
-	/// let mut parser = ArgParser::new()
-	///     .flag("foo f");
-	/// ```
-	pub fn flag(mut self, name: &str) -> Self {
-		self.flags.push(Flag {
-			count: 0,
-			desc: (name.into(), None),
-		});
-		let index = self.flags.len() - 1;
-		for alias in name.split_whitespace() {
-			self.flag_map.insert(alias.to_string(), index);
-		}
-		self
-	}
-
-	/// Registers a new flag with description. The `name` parameter accepts an unlimited number of
-	/// space-separated aliases and single-character shortcuts.
-	///
-	/// ```
-	/// # use flarg::ArgParser;
-	/// let mut parser = ArgParser::new()
-	///     .flag("foo f");
-	/// ```
+	/// Registers a new flag with description.
 	pub fn flag_with(mut self, name: &str, description: &str) -> Self {
 		self.flags.push(Flag {
 			count: 0,
@@ -253,32 +116,7 @@ impl ArgParser {
 		self
 	}
 
-	/// Registers a new command. The `name` parameter accepts an unlimited number of
-	/// space-separated aliases. The command's helptext, flags, and options can be
-	/// registered on the command's ArgParser instance.
-	///
-	/// ```
-	/// # use flarg::ArgParser;
-	/// let mut parser = ArgParser::new()
-	///     .helptext("Usage: appname...")
-	///     .command("cmdname", ArgParser::new()
-	///         .helptext("Usage: appname cmdname...")
-	///         .flag("cmdflag")
-	///     );
-	/// ```
-	pub fn command(mut self, name: &str, cmd_parser: ArgParser) -> Self {
-		self.commands.push(cmd_parser);
-		let index = self.commands.len() - 1;
-		for alias in name.split_whitespace() {
-			self.command_map.insert(alias.to_string(), index);
-		}
-		self
-	}
-
-	/// Returns the value of the named option. Returns the default value registered
-	/// with the option if the option was not found. Any of the option's registered
-	/// aliases or shortcuts can be used for the `name` parameter.
-	/// (This function will panic if `name` is not a registered option name.)
+	/// Returns the value of the named option.
 	pub fn value(&self, name: &str) -> String {
 		if let Some(index) = self.option_map.get(name) {
 			if let Some(value) = self.options[*index].values.last() {
@@ -289,19 +127,7 @@ impl ArgParser {
 		panic!("'{}' is not a registered option name", name);
 	}
 
-	/// Returns the named option's list of values. Any of the option's registered
-	/// aliases or shortcuts can be used for the `name` parameter.
-	/// (This function will panic if `name` is not a registered option name.)
-	pub fn values(&self, name: &str) -> Vec<String> {
-		if let Some(index) = self.option_map.get(name) {
-			return self.options[*index].values.clone();
-		}
-		panic!("'{}' is not a registered option name", name);
-	}
-
-	/// Returns the number of times the named flag or option was found. Any registered
-	/// alias or shortcut can be used for the `name` parameter.
-	/// (This function will panic if `name` is not a registered flag or option name.)
+	/// Returns the number of times the named flag or option was found.
 	pub fn count(&self, name: &str) -> usize {
 		if let Some(index) = self.flag_map.get(name) {
 			return self.flags[*index].count;
@@ -312,21 +138,12 @@ impl ArgParser {
 		panic!("'{}' is not a registered flag or option name", name);
 	}
 
-	/// Returns `true` if the named flag or option was found. Any registered alias or
-	/// shortcut can be used for the `name` parameter.
-	/// (This function will panic if `name` is not a registered flag or option name.)
+	/// Returns `true` if the named flag or option was found.
 	pub fn found(&self, name: &str) -> bool {
 		self.count(name) > 0
 	}
 
 	/// Parse the program's command line arguments.
-	///
-	/// ```
-	/// # let mut parser = flarg::ArgParser::new();
-	/// if let Err(err) = parser.parse() {
-	///     err.exit();
-	/// }
-	/// ```
 	pub fn parse(&mut self) -> Result<(), Error> {
 		let mut strings = Vec::<String>::new();
 		for os_string in std::env::args_os().skip(1) {
@@ -342,8 +159,6 @@ impl ArgParser {
 	}
 
 	fn parse_argstream(&mut self, argstream: &mut ArgStream) -> Result<(), Error> {
-		let mut is_first_arg = true;
-
 		while argstream.has_next() {
 			match argstream.next().as_str() {
 				"--" => {
@@ -360,20 +175,8 @@ impl ArgParser {
 					true => self.handle_equals_opt(arg)?,
 					false => self.handle_short_opt(arg, argstream)?,
 				},
-				arg if is_first_arg && self.command_map.contains_key(arg) => {
-					let mut cp = self.commands.remove(*self.command_map.get(arg).unwrap());
-					self.command_map.clear();
-					self.commands.clear();
-
-					cp.parse_argstream(argstream)?;
-
-					self.cmd_name = Some(arg.to_string());
-					self.cmd_parser = Some(Box::new(cp));
-				}
 				arg => self.args.push(arg.to_string()),
 			}
-
-			is_first_arg = false;
 		}
 		Ok(())
 	}
@@ -477,9 +280,6 @@ pub enum Error {
 	/// Returned when the parser detects an option with a missing value.
 	MissingValue(String),
 
-	/// Returned when the parser detects a help command with a missing argument.
-	MissingHelpArg,
-
 	/// Returned when the command line arguments are not valid unicode strings.
 	InvalidUnicode,
 }
@@ -491,7 +291,6 @@ impl fmt::Display for Error {
 		match self {
 			Error::InvalidName(msg) => write!(f, "Error: {}", msg),
 			Error::MissingValue(msg) => write!(f, "Error: {}", msg),
-			Error::MissingHelpArg => write!(f, "Error: missing argument for the help command"),
 			Error::InvalidUnicode => write!(f, "Error: arguments are not valid unicode strings"),
 		}
 	}
