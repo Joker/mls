@@ -18,26 +18,28 @@ pub struct Flags {
 	pub lvl: usize,
 	pub list_format: bool,
 	pub tree_format: bool,
+	pub xattr: bool,
 }
 
 pub fn args_init() -> (Flags, Vec<String>) {
 	let mut parser = ArgParser::new()
-		.helptext("USAGE:\n\tls [-alStfbcuUgd] [file ...]\nOPTIONS:")
+		.helptext("USAGE:\n\tls [options] [file ...]\nOPTIONS:")
 		.flag_with("a", "Include directory entries whose names begin with a dot (`.`).")
 		.flag_with("l", "List files in the long format.")
+		.flag_with("d", "List of directories only.")
 		.flag_with("S", "Sort by size.")
 		.flag_with("t", "Sort by time.")
-		.flag_with("f", "Absolute path for symbolic link in the list.")
-		.flag_with("b h", "List file sizes in bytes.")
-		.flag_with("c", "Use time when file status was last changed.")
 		.flag_with("u", "Use time of last access.")
 		.flag_with("U", "Use time when file was created.")
-		.flag_with("g", "Display the group name.")
-		.flag_with("d", "List of directories only.")
-		.flag_with("help", "Show list of command-line options.")
+		.flag_with("c", "Use time when file status was last changed.")
+		.flag_with("g", "Display the group name. (long format)")
+		.flag_with("b h", "Display file sizes in bytes. (long format)")
+		.flag_with("@", "Display extended attributes. (long format)")
+		.flag_with("f", "Display absolute path for symbolic link. (long format)")
+		.flag_with("help", "Display list of command-line options.")
+		.flag_with("T", "Recurse into directories as a tree.")
 		.flag_with("2", "Recurse into directories as a tree. Limit the depth 2.")
 		.flag_with("3", "Recurse into directories as a tree. Limit the depth 3.")
-		.flag_with("T", "Recurse into directories as a tree.")
 		.option_with(
 			"L",
 			TREE_LEVEL.to_string().as_str(),
@@ -81,6 +83,7 @@ pub fn args_init() -> (Flags, Vec<String>) {
 		U_create: parser.found("U"),
 		dir_only: parser.found("d"),
 		group: parser.found("g"),
+		xattr: parser.found("@"),
 		lvl,
 		list_format: false,
 		tree_format: tree.0 || tree.1 || tree.2 || tree.3,
@@ -93,7 +96,7 @@ pub fn args_init() -> (Flags, Vec<String>) {
 				fl.long = true;
 				fl.all = true;
 			}
-			"lt" => fl.tree_format = true,
+			"lt" | "tree" => fl.tree_format = true,
 			"ltl" | "llt" => {
 				fl.tree_format = true;
 				fl.long = true;
@@ -104,7 +107,7 @@ pub fn args_init() -> (Flags, Vec<String>) {
 		None => (),
 	};
 
-	fl.list_format = fl.long || fl.Size_sort || fl.time_sort || fl.group;
+	fl.list_format = fl.long || fl.Size_sort || fl.time_sort || fl.group || fl.xattr;
 
 	let dirs = if parser.args.len() > 0 { parser.args } else { vec![".".to_string()] };
 	(fl, dirs)

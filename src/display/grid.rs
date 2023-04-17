@@ -2,7 +2,7 @@ use std::usize;
 
 use crate::{ext::unlibc::terminal_size, File};
 
-use super::{spaces, GRID_GAP};
+use super::GRID_GAP;
 
 fn columns_width(files: &Vec<File>, stack_size: usize) -> (usize, Vec<usize>) {
 	let mut col_sizes = Vec::new();
@@ -88,4 +88,8 @@ pub fn print(files: &Vec<File>) {
 	}
 
 	println!("{}", str_vec.join("\n"))
+}
+
+fn spaces(width: usize) -> String {
+	(0..width).into_iter().map(|_| ' ').collect()
 }

@@ -12,7 +12,8 @@ use crate::{
 	args::Flags,
 	color::RED,
 	display::GRID_GAP,
-	ext::{unlibc::username_group, xattr::FileAttributes},
+	ext::unlibc::username_group,
+	ext::xattr::{Attribute, FileAttributes},
 	Width,
 };
 
@@ -44,7 +45,7 @@ pub struct FileLine {
 	pub group: String,
 	pub perm: String,
 	pub lnk: bool,
-	pub xattr: bool,
+	pub xattr: Option<Vec<Attribute>>,
 }
 
 fn grid_info(path: &PathBuf, sname: String) -> File {
@@ -124,12 +125,12 @@ fn list_info(path: &PathBuf, sname: String, wh: &mut Width, fl: &Flags) -> File 
 	let len = sname.chars().count() + GRID_GAP;
 
 	let xattr = match path.attributes() {
-		Ok(xa) => xa.len() > 0,
-		Err(_) => false,
+		Ok(xa) if xa.len() > 0 => {
+			wh.xattr = true;
+			Some(xa)
+		}
+		_ => None,
 	};
-	if xattr {
-		wh.xattr = true
-	}
 
 	return File {
 		sname,

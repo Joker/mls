@@ -1,4 +1,5 @@
-use crate::color::{BLACK_H, BLUE_L, CYAN, GREEN, GREEN_L, MAGENTA, RED, RED_L, YELLOW, YELLOW_L};
+// use crate::color::{BLACK_H, BLUE_L, CYAN, GREEN, GREEN_L, MAGENTA, RED, RED_L, YELLOW, YELLOW_L};
+use crate::color::{BLACK_H, BLUE_L, CYAN, GREEN, MAGENTA, RED, YELLOW};
 
 pub fn kind_fmt(lnk: bool, dir: bool, nlink: u64) -> String {
 	if lnk {
@@ -17,24 +18,24 @@ pub fn kind_fmt(lnk: bool, dir: bool, nlink: u64) -> String {
 pub fn permissions_fmt(rwx: u32) -> String {
 	let mut out = String::from("");
 	let vp = [
-		format!("{YELLOW_L}r"),
-		format!("{RED_L}w"),
-		format!("{GREEN_L}x"),
-		format!("{YELLOW}r"),
-		format!("{RED}w"),
-		format!("{GREEN}x"),
-		format!("{YELLOW}r"),
-		format!("{RED}w"),
-		format!("{GREEN}x"),
-		// format!("{GREEN}r"),
-		// format!("{YELLOW}w"),
-		// format!("{RED}x"),
-		// format!("{GREEN}r"),
-		// format!("{YELLOW}w"),
-		// format!("{RED}x"),
-		// format!("{GREEN}r"),
-		// format!("{YELLOW}w"),
-		// format!("{RED}x"),
+		// format!("{YELLOW_L}r"),
+		// format!("{RED_L}w"),
+		// format!("{GREEN_L}x"),
+		// format!("{YELLOW}r"),
+		// format!("{RED}w"),
+		// format!("{GREEN}x"),
+		// format!("{YELLOW}r"),
+		// format!("{RED}w"),
+		// format!("{GREEN}x"),
+		format!("{GREEN}r"),
+		format!("{YELLOW}w"),
+		format!("{RED}x"),
+		format!("{GREEN}r"),
+		format!("{YELLOW}w"),
+		format!("{RED}x"),
+		format!("{GREEN}r"),
+		format!("{YELLOW}w"),
+		format!("{RED}x"),
 	];
 	for (i, one) in bits(rwx, 9).iter().enumerate() {
 		if *one {

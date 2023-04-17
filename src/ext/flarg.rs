@@ -59,7 +59,7 @@ impl ArgParser {
 	}
 
 	pub fn print_help(&self) {
-		println!("{}", self.help_head.as_ref().unwrap().trim());
+		println!("{}", self.help_head.as_ref().unwrap_or(&String::from("")).trim());
 		self.flags.iter().for_each(|f| {
 			match f.desc.1.as_ref() {
 				Some(str) => println!("  {}\n         {}", dash(f.desc.0.as_str()), str),
