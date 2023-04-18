@@ -1,4 +1,3 @@
-#![allow(non_snake_case)]
 mod args;
 mod color;
 mod display;
@@ -88,7 +87,7 @@ fn file_vec_print(title: Option<String>, mut file_list: Vec<File>, fl: &Flags, w
 	}
 
 	if !fl.tree_format && fl_len > 1 {
-		if fl.Size_sort {
+		if fl.size_sort {
 			file_list.sort_by_key(|f| (Reverse(f.dir), f.line.as_ref().unwrap().size));
 			return display::list::print(&file_list, fl, w);
 		}

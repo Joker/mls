@@ -26,6 +26,7 @@ pub static XT22: &str = "\x1b[38;5;22m";
 pub static XT23: &str = "\x1b[38;5;23m";
 pub static XT36: &str = "\x1b[38;5;36m";
 pub static XT42: &str = "\x1b[38;5;42m";
+pub static OCT: &str = "\x1b[38;5;162m";
 
 pub static DAY1: &str = "\x1b[38;5;179m";
 pub static DAY2: &str = "\x1b[38;5;180m";

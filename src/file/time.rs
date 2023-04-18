@@ -11,7 +11,7 @@ use crate::{
 pub const TIMEZONE: u64 = 10800;
 
 pub fn unix(md: &Metadata, fl: &Flags) -> u64 {
-	if fl.U_create {
+	if fl.create {
 		match md.created().ok() {
 			Some(t) => match t.duration_since(UNIX_EPOCH) {
 				Ok(s) => s.as_secs(),
@@ -19,7 +19,7 @@ pub fn unix(md: &Metadata, fl: &Flags) -> u64 {
 			},
 			None => 0,
 		}
-	} else if fl.u_access {
+	} else if fl.access {
 		md.atime() as u64
 	} else if fl.ctime {
 		md.ctime() as u64

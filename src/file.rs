@@ -18,7 +18,7 @@ use crate::{
 };
 
 use self::{
-	mode::{kind_fmt, permissions_fmt},
+	mode::{kind_fmt, oct, permissions_fmt},
 	name::{ext, ext_group, filename, filename_fmt},
 	size::size_to_string,
 };
@@ -145,7 +145,12 @@ fn list_info(path: &PathBuf, sname: String, wh: &mut Width, fl: &Flags) -> File 
 			suf,
 			user,
 			group,
-			perm: format!("{}{}", kind_fmt(lnk, dir, md.nlink()), permissions_fmt(rwx)),
+			perm: format!(
+				"{}{}{}",
+				oct(rwx, fl),
+				kind_fmt(lnk, dir, md.nlink()),
+				permissions_fmt(rwx)
+			),
 			lnk,
 			xattr,
 		})),

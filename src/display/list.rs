@@ -42,12 +42,12 @@ fn line_fmt(f: &File, fl: &Flags, w: &Width) -> String {
 		Some(l) => {
 			let usr_width = w.uid + 1;
 			let grp_width = if fl.group { w.gid + 1 } else { 0 };
-			let x_width = 32 + usr_width + grp_width + w.szn;
+			let x_width = 32 + usr_width + grp_width + w.szn + if fl.octal { 8 } else { 0 };
 
 			let (xsign, xattr) = xattr_fmt(w.xattr, &l.xattr, fl.xattr && !fl.tree_format, x_width);
 
 			format!(
-				"{WHITE}{}{WHITE}{}{: >ncu$}{: >ncg$}  {}  {}  {}{}",
+				"{}{WHITE}{}{: >ncu$}{: >ncg$}  {}  {}  {}{}",
 				l.perm,
 				xsign,
 				l.user,

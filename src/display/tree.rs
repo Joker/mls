@@ -23,7 +23,7 @@ pub fn list(path: &Path, fl: &Flags, w: &mut Width, lvl: usize, trunk: String) -
 		return out;
 	}
 
-	if fl.Size_sort {
+	if fl.size_sort {
 		files.sort_by_key(|f| (Reverse(f.dir), f.line.as_ref().unwrap().size));
 	} else if fl.time_sort {
 		files.sort_by_key(|f| (f.line.as_ref().unwrap().time));

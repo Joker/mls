@@ -6,24 +6,25 @@ pub const TREE_LEVEL: usize = 2;
 pub struct Flags {
 	pub all: bool,
 	pub long: bool,
-	pub Size_sort: bool,
+	pub size_sort: bool,
 	pub time_sort: bool,
 	pub full: bool,
 	pub bytes: bool,
 	pub ctime: bool,
-	pub u_access: bool,
-	pub U_create: bool,
+	pub access: bool,
+	pub create: bool,
 	pub dir_only: bool,
 	pub group: bool,
+	pub octal: bool,
+	pub xattr: bool,
 	pub lvl: usize,
 	pub list_format: bool,
 	pub tree_format: bool,
-	pub xattr: bool,
 }
 
 pub fn args_init() -> (Flags, Vec<String>) {
 	let mut parser = ArgParser::new()
-		.helptext("USAGE:\n\tls [options] [file ...]\nOPTIONS:")
+		.helptext("USAGE:\n\tmls [options] [file ...]\nOPTIONS:")
 		.flag_with("a", "Include directory entries whose names begin with a dot (`.`).")
 		.flag_with("l", "List files in the long format.")
 		.flag_with("d", "List of directories only.")
@@ -32,9 +33,10 @@ pub fn args_init() -> (Flags, Vec<String>) {
 		.flag_with("u", "Use time of last access.")
 		.flag_with("U", "Use time when file was created.")
 		.flag_with("c", "Use time when file status was last changed.")
-		.flag_with("g", "Display the group name. (long format)")
+		.flag_with("g", "Display file group name. (long format)")
 		.flag_with("b h", "Display file sizes in bytes. (long format)")
-		.flag_with("@", "Display extended attributes. (long format)")
+		.flag_with("@", "Display file extended attributes. (long format)")
+		.flag_with("O", "Display file permission in octal format. (long format)")
 		.flag_with("f", "Display absolute path for symbolic link. (long format)")
 		.flag_with("help", "Display list of command-line options.")
 		.flag_with("T", "Recurse into directories as a tree.")
@@ -56,17 +58,17 @@ pub fn args_init() -> (Flags, Vec<String>) {
 	let tree = (
 		parser.found("2"),
 		parser.found("3"),
-		parser.found("T"),
 		parser.found("L"),
+		parser.found("T"),
 	);
 	let lvl = if tree.0 {
 		2
 	} else if tree.1 {
 		3
 	} else if tree.2 {
-		999
-	} else if tree.3 {
 		parser.value("L").parse::<usize>().unwrap_or(TREE_LEVEL)
+	} else if tree.3 {
+		999
 	} else {
 		TREE_LEVEL
 	};
@@ -74,16 +76,17 @@ pub fn args_init() -> (Flags, Vec<String>) {
 	let mut fl = Flags {
 		all: parser.found("a"),
 		long: parser.found("l"),
-		Size_sort: parser.found("S"),
+		size_sort: parser.found("S"),
 		time_sort: parser.found("t"),
 		full: parser.found("f"),
 		bytes: parser.found("b"),
 		ctime: parser.found("c"),
-		u_access: parser.found("u"),
-		U_create: parser.found("U"),
+		access: parser.found("u"),
+		create: parser.found("U"),
 		dir_only: parser.found("d"),
 		group: parser.found("g"),
 		xattr: parser.found("@"),
+		octal: parser.found("O"),
 		lvl,
 		list_format: false,
 		tree_format: tree.0 || tree.1 || tree.2 || tree.3,
@@ -107,7 +110,7 @@ pub fn args_init() -> (Flags, Vec<String>) {
 		None => (),
 	};
 
-	fl.list_format = fl.long || fl.Size_sort || fl.time_sort || fl.group || fl.xattr;
+	fl.list_format = fl.long || fl.size_sort || fl.time_sort || fl.group || fl.xattr;
 
 	let dirs = if parser.args.len() > 0 { parser.args } else { vec![".".to_string()] };
 	(fl, dirs)

@@ -1,5 +1,17 @@
 // use crate::color::{BLACK_H, BLUE_L, CYAN, GREEN, GREEN_L, MAGENTA, RED, RED_L, YELLOW, YELLOW_L};
-use crate::color::{BLACK_H, BLUE_L, CYAN, GREEN, MAGENTA, RED, YELLOW};
+use crate::{
+	args::Flags,
+	color::{BLACK_H, BLUE_L, CYAN, GREEN, MAGENTA, OCT, RED, YELLOW},
+};
+
+pub fn oct(rwx: u32, fl: &Flags) -> String {
+	if fl.octal {
+		let o = format!("{: >6o}", rwx);
+		let spl = o.split_at(3);
+		return format!("{BLACK_H}{}{OCT}{}  ", spl.0, spl.1);
+	}
+	"".into()
+}
 
 pub fn kind_fmt(lnk: bool, dir: bool, nlink: u64) -> String {
 	if lnk {
