@@ -42,7 +42,7 @@ fn main() {
 				}
 				folders.push((Some(st), file_list));
 			}
-			path if path.is_file() || path.is_symlink() => {
+			path if path.exists() || path.is_symlink() => {
 				match file::info(&path.to_path_buf(), &flags, &mut width) {
 					Some(mut f) => {
 						let bp = basepath(path);

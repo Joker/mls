@@ -3,7 +3,7 @@ use std::{os::unix::prelude::PermissionsExt, path::PathBuf};
 use crate::color::{CYAN, RED, WHITE};
 
 use super::name::{basepath, ext, ext_group, filename, filename_fmt};
-use super::USEREXE;
+use super::USER_EXE;
 
 pub fn info(pb: &PathBuf) -> (PathBuf, PathBuf, bool, bool, bool) {
 	let mut read_link_path = PathBuf::new();
@@ -22,7 +22,7 @@ pub fn info(pb: &PathBuf) -> (PathBuf, PathBuf, bool, bool, bool) {
 			match std::fs::metadata(&full_path) {
 				Ok(metadata) => {
 					dir = metadata.is_dir();
-					exe = metadata.permissions().mode() & USEREXE == USEREXE;
+					exe = metadata.permissions().mode() & USER_EXE == USER_EXE;
 				}
 				Err(_) => nvalid = true,
 			}

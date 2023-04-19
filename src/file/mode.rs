@@ -1,39 +1,56 @@
 // use crate::color::{BLACK_H, BLUE_L, CYAN, GREEN, GREEN_L, MAGENTA, RED, RED_L, YELLOW, YELLOW_L};
 use crate::{
 	args::Flags,
-	color::{BLACK_H, BLUE_L, CYAN, GREEN, GREEN_H, MAGENTA, MAGENTA_H, OCT, RED, YELLOW},
+	color::{BLACK_H, BLUE_L, CYAN, GREEN, GREEN_H, GREEN_L, MAGENTA, MAGENTA_H, OCT, RED, RED_L, YELLOW},
 };
 
 const BLOCK_DEV: u32 = 0o060000;
 const DIR: u32 = 0o040000;
 const CHAR_DEV: u32 = 0o020000;
-const FILE: u32 = 0o100000;
+const PIPE: u32 = 0o010000; // S_IFIFO
+const FILE: u32 = 0o100000; // S_IFREG
+
 const STICKY_UID: u32 = 0o004000;
 const STICKY_GID: u32 = 0o002000;
 const STICKY_DIR: u32 = 0o001000;
 
-pub fn permissions_fmt(rwx: u32, nlink: u64, fl: &Flags) -> String {
-	let has_bit_ = |bit| rwx & bit == bit;
-	//
-	let kind = if has_bit_(BLOCK_DEV) {
-		format!("{GREEN_H}b")
-	} else if has_bit_(DIR) {
-		format!("{BLUE_L}d")
-	} else if has_bit_(CHAR_DEV) {
-		match has_bit_(FILE) {
+pub const USER_EXE: u32 = 0o000100; // S_IXUSR
+
+// const LNK:  u32 = 0o120000;
+// const SOCK: u32 = 0o140000;
+
+fn kind(rwx: u32, nlink: u64) -> String {
+	let has_bit = |bit| rwx & bit == bit;
+
+	if has_bit(BLOCK_DEV) {
+		return format!("{GREEN_H}b");
+	}
+	if has_bit(DIR) {
+		return match has_bit(FILE) {
+			true => format!("{RED_L}s"),
+			false => format!("{BLUE_L}d"),
+		};
+	}
+	if has_bit(CHAR_DEV) {
+		return match has_bit(FILE) {
 			true => format!("{CYAN}l"),
 			false => format!("{MAGENTA_H}c"),
-		}
-	} else {
-		match nlink {
-			n if n > 9 => format!("{MAGENTA}*"),
-			n if n > 1 => format!("{MAGENTA}{n}"),
-			_ => String::from(" "),
-		}
-	};
+		};
+	}
+	if has_bit(PIPE) {
+		return format!("{GREEN_L}│"); // p
+	}
 
+	return match nlink {
+		n if n > 9 => format!("{MAGENTA}*"),
+		n if n > 1 => format!("{MAGENTA}{n}"),
+		_ => String::from(" "),
+	};
+}
+
+pub fn permissions_fmt(rwx: u32, nlink: u64, fl: &Flags) -> String {
 	let mut vp = [
-		kind,
+		kind(rwx, nlink),
 		// format!("{YELLOW_L}r"),
 		// format!("{YELLOW_L}r"),
 		// format!("{RED_L}w"),
@@ -60,13 +77,13 @@ pub fn permissions_fmt(rwx: u32, nlink: u64, fl: &Flags) -> String {
 		}
 	}
 
-	if has_bit_(STICKY_UID) {
+	if has_bit(rwx, STICKY_UID) {
 		vp[3] = format!("{MAGENTA_H}S");
 	}
-	if has_bit_(STICKY_GID) {
+	if has_bit(rwx, STICKY_GID) {
 		vp[6] = format!("{MAGENTA_H}S");
 	}
-	if has_bit_(STICKY_DIR) {
+	if has_bit(rwx, STICKY_DIR) {
 		vp[9] = format!("{MAGENTA_H}t");
 	}
 
@@ -84,4 +101,8 @@ fn bits(rwx: u32, n: u8) -> Vec<bool> {
 		.collect::<Vec<bool>>();
 	v.reverse();
 	v
+}
+
+fn has_bit(rwx: u32, bit: u32) -> bool {
+	rwx & bit == bit
 }

@@ -18,12 +18,10 @@ use crate::{
 };
 
 use self::{
-	mode::permissions_fmt,
+	mode::{permissions_fmt, USER_EXE},
 	name::{ext, ext_group, filename, filename_fmt},
 	size::size_to_string,
 };
-
-pub const USEREXE: u32 = 64;
 
 #[derive(Clone, Debug)]
 pub struct File {
@@ -40,7 +38,7 @@ pub struct FileLine {
 	pub time: u64,
 	pub size: u64,
 	pub size_str: String,
-	pub suf: String,
+	pub size_suf: String,
 	pub user: String,
 	pub group: String,
 	pub perm: String,
@@ -52,7 +50,7 @@ fn grid_info(path: &PathBuf, sname: String) -> File {
 	let md = std::fs::symlink_metadata(path).unwrap();
 
 	let lnk = md.is_symlink();
-	let exe = md.permissions().mode() & USEREXE == USEREXE; // S_IXUSR
+	let exe = md.permissions().mode() & USER_EXE == USER_EXE;
 	let (ext, egrp) = ext_group(ext(path));
 	let mut dir = md.is_dir();
 	let mut name = filename_fmt(&sname, &ext, egrp, dir, exe, lnk);
@@ -81,7 +79,7 @@ fn list_info(path: &PathBuf, sname: String, wh: &mut Width, fl: &Flags) -> File 
 	let mut dir = md.is_dir();
 	let lnk = md.is_symlink();
 	let rwx = md.permissions().mode();
-	let exe = rwx & USEREXE == USEREXE; // S_IXUSR
+	let exe = rwx & USER_EXE == USER_EXE;
 	let (ext, egrp) = ext_group(ext(path));
 	let mut name = filename_fmt(&sname, &ext, egrp, dir, exe, lnk);
 
@@ -94,14 +92,14 @@ fn list_info(path: &PathBuf, sname: String, wh: &mut Width, fl: &Flags) -> File 
 	};
 
 	let mut size_str = "".to_string();
-	let mut suf = "".to_string();
+	let mut size_suf = "".to_string();
 	let sn = if dir {
 		size.to_string().len() + 1
 	} else if fl.bytes {
 		size.to_string().len()
 	} else {
-		(size_str, suf) = size_to_string(size);
-		size_str.len() + suf.len()
+		(size_str, size_suf) = size_to_string(size);
+		size_str.len() + size_suf.len()
 	};
 	if wh.szn < sn {
 		wh.szn = sn
@@ -142,7 +140,7 @@ fn list_info(path: &PathBuf, sname: String, wh: &mut Width, fl: &Flags) -> File 
 			time: time::unix(&md, fl),
 			size,
 			size_str,
-			suf,
+			size_suf, // k M G
 			user,
 			group,
 			perm: permissions_fmt(rwx, md.nlink(), fl),
