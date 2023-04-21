@@ -64,7 +64,7 @@ fn line_fmt(f: &File, fl: &Flags, w: &Width) -> String {
 	}
 }
 
-pub fn print(files: &Vec<File>, fl: &Flags, w: &Width) {
+pub fn print(files: &[File], fl: &Flags, w: &Width) {
 	println!(
 		"{}",
 		files

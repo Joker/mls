@@ -92,7 +92,7 @@ pub fn args_init() -> (Flags, Vec<String>) {
 		tree_format: tree.0 || tree.1 || tree.2 || tree.3,
 	};
 	match &parser.app_path {
-		Some(p) => match p.rsplit("/").next().unwrap_or("") {
+		Some(p) => match p.rsplit('/').next().unwrap_or("") {
 			"ll" => fl.long = true,
 			"la" => fl.all = true,
 			"lla" | "lal" => {
@@ -112,6 +112,6 @@ pub fn args_init() -> (Flags, Vec<String>) {
 
 	fl.list_format = fl.long || fl.size_sort || fl.time_sort || fl.group || fl.xattr;
 
-	let dirs = if parser.args.len() > 0 { parser.args } else { vec![".".to_string()] };
+	let dirs = if !parser.args.is_empty() { parser.args } else { vec![".".to_string()] };
 	(fl, dirs)
 }

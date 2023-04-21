@@ -19,7 +19,7 @@ pub fn list(path: &Path, fl: &Flags, w: &mut Width, lvl: usize, trunk: String) -
 	}
 
 	let mut files = file::list(path, fl, w);
-	if files.len() == 0 {
+	if files.is_empty() {
 		return out;
 	}
 
@@ -32,7 +32,7 @@ pub fn list(path: &Path, fl: &Flags, w: &mut Width, lvl: usize, trunk: String) -
 	}
 
 	if lvl == 0 {
-		let mut f = file::info(&path.to_path_buf(), &fl, w).unwrap();
+		let mut f = file::info(&path.to_path_buf(), fl, w).unwrap();
 		f.name = format!("{WHITE} {}{}", basepath(path), f.name);
 		out.push(f);
 	}
@@ -58,7 +58,7 @@ pub fn list(path: &Path, fl: &Flags, w: &mut Width, lvl: usize, trunk: String) -
 	out
 }
 
-pub fn print(files: &Vec<File>) {
+pub fn print(files: &[File]) {
 	println!(
 		"{}",
 		files.iter().map(|f| f.name.clone()).collect::<Vec<_>>().join("\n")

@@ -43,7 +43,7 @@ pub fn ref_fmt(pb: &PathBuf, abs: bool) -> (String, bool) {
 	let name = filename(&path);
 
 	let path_to = if abs {
-		match std::fs::canonicalize(&pb_path) {
+		match std::fs::canonicalize(pb_path) {
 			Ok(s) => basepath(s.as_path()),
 			Err(_) => basepath(path.as_path()),
 		}

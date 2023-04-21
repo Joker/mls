@@ -6,7 +6,7 @@ pub fn basepath(path: &Path) -> String {
 	match path.parent() {
 		Some(p) => {
 			let mut path = p.to_string_lossy().to_string();
-			if path.len() > 0 {
+			if !path.is_empty() {
 				path += "/"
 			}
 			path
@@ -83,5 +83,5 @@ pub fn filename_fmt(name: &str, ext: &str, egrp: u8, dir: bool, exe: bool, lnk: 
 		}
 	};
 
-	return format!("{color}{name}");
+	format!("{color}{name}")
 }

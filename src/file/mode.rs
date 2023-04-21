@@ -41,11 +41,11 @@ fn kind(rwx: u32, nlink: u64) -> String {
 		return format!("{GREEN_L}│"); // p
 	}
 
-	return match nlink {
+	match nlink {
 		n if n > 9 => format!("{MAGENTA}*"),
 		n if n > 1 => format!("{MAGENTA}{n}"),
 		_ => String::from(" "),
-	};
+	}
 }
 
 pub fn permissions_fmt(rwx: u32, nlink: u64, fl: &Flags) -> String {
@@ -97,7 +97,7 @@ pub fn permissions_fmt(rwx: u32, nlink: u64, fl: &Flags) -> String {
 
 fn bits(rwx: u32, n: u8) -> Vec<bool> {
 	let mut v = (0..n)
-		.map(|n| if (rwx >> n) & 1 == 1 { true } else { false })
+		.map(|n| (rwx >> n) & 1 == 1)
 		.collect::<Vec<bool>>();
 	v.reverse();
 	v

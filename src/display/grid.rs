@@ -91,5 +91,5 @@ pub fn print(files: &Vec<File>) {
 }
 
 fn spaces(width: usize) -> String {
-	(0..width).into_iter().map(|_| ' ').collect()
+	(0..width).map(|_| ' ').collect()
 }

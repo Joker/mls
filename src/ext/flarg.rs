@@ -166,12 +166,12 @@ impl ArgParser {
 						self.args.push(argstream.next());
 					}
 				}
-				arg if arg.starts_with("--") => match arg.contains("=") {
+				arg if arg.starts_with("--") => match arg.contains('=') {
 					true => self.handle_equals_opt(arg)?,
 					false => self.handle_long_opt(arg, argstream)?,
 				},
 				"-" => self.args.push("-".to_string()),
-				arg if arg.starts_with("-") => match arg.contains("=") {
+				arg if arg.starts_with('-') => match arg.contains('=') {
 					true => self.handle_equals_opt(arg)?,
 					false => self.handle_short_opt(arg, argstream)?,
 				},
@@ -196,9 +196,9 @@ impl ArgParser {
 			return Ok(());
 		}
 
-		return Err(Error::InvalidName(format!(
+		Err(Error::InvalidName(format!(
 			"{arg} is not a recognised flag or option name",
-		)));
+		)))
 	}
 
 	fn handle_short_opt(&mut self, arg: &str, argstream: &mut ArgStream) -> Result<(), Error> {
@@ -234,7 +234,7 @@ impl ArgParser {
 		let value = splits[1];
 
 		if let Some(index) = self.option_map.get(name.trim_start_matches('-')) {
-			if value == "" {
+			if value.is_empty() {
 				return Err(Error::MissingValue(format!("missing value for {name}")));
 			}
 
@@ -242,7 +242,7 @@ impl ArgParser {
 			return Ok(());
 		}
 
-		return Err(Error::InvalidName(format!("{name} is not a recognised option name")));
+		Err(Error::InvalidName(format!("{name} is not a recognised option name")))
 	}
 }
 

@@ -34,23 +34,19 @@ fn main() {
 	for st in args {
 		match Path::new(&st) {
 			path if path.is_dir() => {
-				let file_list;
-				if flags.tree_format {
-					file_list = tree::list(path, &flags, &mut width, 0, "".into());
+				let file_list = if flags.tree_format {
+					tree::list(path, &flags, &mut width, 0, "".into())
 				} else {
-					file_list = file::list(path, &flags, &mut width);
-				}
+					file::list(path, &flags, &mut width)
+				};
 				folders.push((Some(st), file_list));
 			}
 			path if path.exists() || path.is_symlink() => {
-				match file::info(&path.to_path_buf(), &flags, &mut width) {
-					Some(mut f) => {
-						let bp = basepath(path);
-						f.name = format!("{WHITE}{}{}", bp, f.name);
-						f.len = format!("{}{}", bp, f.sname).chars().count() + GRID_GAP;
-						standalone.push(f)
-					}
-					None => (),
+				if let Some(mut f) = file::info(&path.to_path_buf(), &flags, &mut width) {
+					let bp = basepath(path);
+					f.name = format!("{WHITE}{}{}", bp, f.name);
+					f.len = format!("{}{}", bp, f.sname).chars().count() + GRID_GAP;
+					standalone.push(f)
 				}
 			}
 			_ => println!("{RED}{st}{WHITE}: No such file or directory\n"),

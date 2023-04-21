@@ -58,19 +58,19 @@ fn grid_info(path: &PathBuf, sname: String) -> File {
 
 	if lnk {
 		let nvalid;
-		(_, _, _, dir, nvalid) = link::info(&path);
+		(_, _, _, dir, nvalid) = link::info(path);
 		if nvalid {
 			name = format!("{RED}{sname}");
 		}
 	}
-	return File {
+	File {
 		sname,
 		name,
 		ext,
 		len,
 		dir,
 		line: None,
-	};
+	}
 }
 
 fn list_info(path: &PathBuf, sname: String, wh: &mut Width, fl: &Flags) -> File {
@@ -117,20 +117,20 @@ fn list_info(path: &PathBuf, sname: String, wh: &mut Width, fl: &Flags) -> File 
 
 	if lnk {
 		let fname;
-		(fname, dir) = link::ref_fmt(&path, fl.full);
+		(fname, dir) = link::ref_fmt(path, fl.full);
 		name.push_str(&fname);
 	}
 	let len = sname.chars().count() + GRID_GAP;
 
 	let xattr = match path.attributes() {
-		Ok(xa) if xa.len() > 0 => {
+		Ok(xa) if !xa.is_empty() => {
 			wh.xattr = true;
 			Some(xa)
 		}
 		_ => None,
 	};
 
-	return File {
+	File {
 		sname,
 		name,
 		ext,
@@ -147,7 +147,7 @@ fn list_info(path: &PathBuf, sname: String, wh: &mut Width, fl: &Flags) -> File 
 			lnk,
 			xattr,
 		})),
-	};
+	}
 }
 
 pub fn info(path: &PathBuf, fl: &Flags, wh: &mut Width) -> Option<File> {
@@ -171,11 +171,11 @@ pub fn info(path: &PathBuf, fl: &Flags, wh: &mut Width) -> Option<File> {
 pub fn list(path: &Path, fl: &Flags, w: &mut Width) -> Vec<File> {
 	match fs::read_dir(path) {
 		Ok(list) => list
-			.filter_map(|x| info(&x.unwrap().path(), &fl, w))
+			.filter_map(|x| info(&x.unwrap().path(), fl, w))
 			.collect::<Vec<File>>(),
 		Err(e) => {
 			println!("read_dir: {}", e);
-			return Vec::new();
+			Vec::new()
 		}
 	}
 }
