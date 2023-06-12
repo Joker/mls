@@ -1,5 +1,5 @@
 use crate::{
-	color::{BLACK_H, BLACK_L, GREEN, WHITE, XT23, XT42},
+	color::{BLACK_H, BLACK_L, GREEN, WHITE, SUFFIX, SIZE},
 	Width,
 };
 
@@ -18,13 +18,13 @@ pub fn size_fmt(f: &File, w: &Width, bitsize: bool) -> String {
 	}
 	match line.size_suf.as_str() {
 		"M" | "G" => format!(
-			"{XT42}{: >nsz$}{XT23}{}",
+			"{SIZE}{: >nsz$}{SUFFIX}{}",
 			line.size_str,
 			line.size_suf,
 			nsz = w.szn - 1
 		),
 		"k" => format!(
-			"{GREEN}{: >nsz$}{XT23}{}",
+			"{GREEN}{: >nsz$}{SUFFIX}{}",
 			line.size_str,
 			line.size_suf,
 			nsz = w.szn - 1
@@ -38,8 +38,8 @@ pub fn size_to_string(bytes: u64) -> (String, String) {
 		bt if bt >= 1073741824 => (short_size(bt as f64), "G".to_string()),
 		bt if bt >= 1048576 => (short_size(bt as f64), "M".to_string()),
 		bt if bt >= 1024 => (short_size(bt as f64), "k".to_string()),
-		bt if bt >= 1 => (bt.to_string(), "".to_string()),
-		_ => ("0".to_string(), "".to_string()),
+		bt if bt >= 1 => (bt.to_string(), String::new()),
+		_ => ("0".to_string(), String::new()),
 		// _ => format!("{GREEN_L}{}0{GREEN}", spaces(FSIZE_WIDTH - 1)),
 	}
 }

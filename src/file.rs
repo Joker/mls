@@ -10,7 +10,7 @@ use std::path::{Path, PathBuf};
 
 use crate::{
 	args::Flags,
-	color::RED,
+	color::{RED, WHITE},
 	display::GRID_GAP,
 	ext::unlibc::username_group,
 	ext::xattr::{Attribute, FileAttributes},
@@ -91,8 +91,8 @@ fn list_info(path: &PathBuf, sname: String, wh: &mut Width, fl: &Flags) -> File 
 		false => md.size(),
 	};
 
-	let mut size_str = "".to_string();
-	let mut size_suf = "".to_string();
+	let mut size_str = String::new();
+	let mut size_suf = String::new();
 	let sn = if dir {
 		size.to_string().len() + 1
 	} else if fl.bytes {
@@ -110,7 +110,7 @@ fn list_info(path: &PathBuf, sname: String, wh: &mut Width, fl: &Flags) -> File 
 		wh.uid = user.len()
 	}
 	if !fl.group {
-		group = "".to_string();
+		group = String::new();
 	} else if wh.gid < group.len() {
 		wh.gid = group.len()
 	}
@@ -174,7 +174,7 @@ pub fn list(path: &Path, fl: &Flags, w: &mut Width) -> Vec<File> {
 			.filter_map(|x| info(&x.unwrap().path(), fl, w))
 			.collect::<Vec<File>>(),
 		Err(e) => {
-			println!("read_dir: {}", e);
+			println!("read path: {RED}{: <80}{WHITE}  {}", path.to_string_lossy(), e);
 			Vec::new()
 		}
 	}

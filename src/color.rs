@@ -21,15 +21,23 @@ pub static RED_L: &str = "\x1b[0;91m";
 pub static GREEN_L: &str = "\x1b[0;92m";
 // pub static YELLOW_L: &str = "\x1b[0;93m";
 pub static BLUE_L: &str = "\x1b[0;94m";
-pub static MAGENTA_L: &str = "\x1b[0;95m";
+// pub static MAGENTA_L: &str = "\x1b[0;95m";
 // pub static CYAN_L: &str = "\x1b[0;96m";
 // pub static WHITE_L: &str = "\x1b[0;97m";
 
-pub static XT22: &str = "\x1b[38;5;22m";
-pub static XT23: &str = "\x1b[38;5;23m";
-pub static XT36: &str = "\x1b[38;5;36m";
-pub static XT42: &str = "\x1b[38;5;42m";
+pub static SUFFIX: &str = "\x1b[38;5;23m";
+pub static SIZE: &str = "\x1b[38;5;42m";
+
 pub static OCT: &str = "\x1b[38;5;162m";
+
+pub static ZIP: &str = YELLOW;
+pub static IMG: &str = "\x1b[38;5;132m";
+pub static MP3: &str = "\x1b[38;5;133m";
+pub static AVI: &str = "\x1b[38;5;135m";
+pub static DOC: &str = "\x1b[38;5;22m";
+pub static SRC: &str = "\x1b[38;5;36m";
+pub static CFG: &str = "\x1b[38;5;23m";
+pub static TMP: &str = "\x1b[38;5;244m";
 
 pub static DAY1: &str = "\x1b[38;5;179m";
 pub static DAY2: &str = "\x1b[38;5;180m";

@@ -35,7 +35,7 @@ fn main() {
 		match Path::new(&st) {
 			path if path.is_dir() => {
 				let file_list = if flags.tree_format {
-					tree::list(path, &flags, &mut width, 0, "".into())
+					tree::list(path, &flags, &mut width, 0, String::new())
 				} else {
 					file::list(path, &flags, &mut width)
 				};

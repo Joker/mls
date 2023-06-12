@@ -13,7 +13,7 @@ use super::tree::{END, LEAF};
 fn xattr_fmt(wx: bool, lx: &Option<Vec<Attribute>>, detail: bool, width: usize) -> (&str, String) {
 	match wx {
 		true => match lx {
-			Some(_) if !detail => ("@", "".into()),
+			Some(_) if !detail => ("@", String::new()),
 			Some(atrs) => {
 				let last = atrs.iter().last().unwrap();
 				(
@@ -31,9 +31,9 @@ fn xattr_fmt(wx: bool, lx: &Option<Vec<Attribute>>, detail: bool, width: usize) 
 						.join(""),
 				)
 			}
-			_ => (" ", "".into()),
+			_ => (" ", String::new()),
 		},
-		false => ("", "".into()),
+		false => ("", String::new()),
 	}
 }
 
@@ -60,7 +60,7 @@ fn line_fmt(f: &File, fl: &Flags, w: &Width) -> String {
 				ncg = grp_width,
 			)
 		}
-		_ => "".to_string(),
+		_ => String::new(),
 	}
 }
 
