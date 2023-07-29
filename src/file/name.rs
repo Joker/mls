@@ -2,7 +2,7 @@ use std::path::Path;
 
 use crate::color::{AVI, BLUE_L, CFG, CYAN, DOC, GREEN_H, IMG, MP3, SRC, TMP, WHITE, ZIP};
 
-pub fn basepath(path: &Path) -> String {
+pub fn parent_path(path: &Path) -> String {
 	match path.parent() {
 		Some(p) => {
 			let mut path = p.to_string_lossy().to_string();

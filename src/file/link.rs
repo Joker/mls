@@ -2,19 +2,19 @@ use std::{os::unix::prelude::PermissionsExt, path::PathBuf};
 
 use crate::color::{CYAN, RED, WHITE};
 
-use super::name::{basepath, ext, ext_group, filename, filename_fmt};
+use super::name::{ext, ext_group, filename, filename_fmt, parent_path};
 use super::USER_EXE;
 
 pub fn info(pb: &PathBuf) -> (PathBuf, PathBuf, bool, bool, bool) {
 	let mut read_link_path = PathBuf::new();
 	let mut full_path = PathBuf::new();
-	let mut nvalid = false;
+	let mut error = false;
 	let mut dir = false;
 	let mut exe = false;
 	match std::fs::read_link(pb) {
 		Ok(p) => {
 			full_path = if p.is_relative() {
-				PathBuf::from(format!("{}/{}", basepath(pb), p.to_string_lossy()))
+				PathBuf::from(format!("{}/{}", parent_path(pb), p.to_string_lossy()))
 			} else {
 				p.clone()
 			};
@@ -24,19 +24,19 @@ pub fn info(pb: &PathBuf) -> (PathBuf, PathBuf, bool, bool, bool) {
 					dir = metadata.is_dir();
 					exe = metadata.permissions().mode() & USER_EXE == USER_EXE;
 				}
-				Err(_) => nvalid = true,
+				Err(_) => error = true,
 			}
 		}
-		Err(_) => nvalid = true,
+		Err(_) => error = true,
 	};
-	(read_link_path, full_path, exe, dir, nvalid)
+	(read_link_path, full_path, exe, dir, error)
 }
 
 pub fn ref_fmt(pb: &PathBuf, abs: bool) -> (String, bool) {
-	let (path, pb_path, exe, dir, nvalid) = info(pb);
+	let (path, pb_path, exe, dir, error) = info(pb);
 
-	if nvalid {
-		return (format!("{RED} -> {}", path.to_string_lossy()), false);
+	if error {
+		return (format!("{RED} -> {}", pb.to_string_lossy()), false);
 	}
 
 	let (ext, egrp) = ext_group(ext(&path));
@@ -44,11 +44,11 @@ pub fn ref_fmt(pb: &PathBuf, abs: bool) -> (String, bool) {
 
 	let path_to = if abs {
 		match std::fs::canonicalize(pb_path) {
-			Ok(s) => basepath(s.as_path()),
-			Err(_) => basepath(path.as_path()),
+			Ok(s) => parent_path(s.as_path()),
+			Err(_) => parent_path(path.as_path()),
 		}
 	} else {
-		basepath(path.as_path())
+		parent_path(path.as_path())
 	};
 	(
 		format!(

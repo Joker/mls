@@ -1,5 +1,5 @@
 use crate::{
-	color::{BLACK_H, BLACK_L, GREEN, WHITE, SUFFIX, SIZE},
+	color::{BLACK_H, BLACK_L, GREEN, SIZE, SUFFIX, WHITE},
 	Width,
 };
 

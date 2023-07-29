@@ -9,7 +9,7 @@ use std::{cmp::Reverse, path::Path};
 use args::{args_init, Flags};
 use color::{BLUE_L, RED, WHITE};
 use display::{tree, GRID_GAP};
-use file::{name::basepath, File};
+use file::{name::parent_path, File};
 
 #[derive(Debug)]
 pub struct Width {
@@ -22,7 +22,7 @@ pub struct Width {
 fn main() {
 	let (flags, args) = args_init();
 
-	let mut standalone = Vec::new();
+	let mut file_list = Vec::new();
 	let mut folders = Vec::new();
 	let mut width = Width {
 		uid: 0,
@@ -31,35 +31,35 @@ fn main() {
 		xattr: false,
 	};
 
-	for st in args {
-		match Path::new(&st) {
+	for string_path in args {
+		match Path::new(&string_path) {
 			path if path.is_dir() => {
-				let file_list = if flags.tree_format {
+				let list = if flags.tree_format {
 					tree::list(path, &flags, &mut width, 0, String::new())
 				} else {
 					file::list(path, &flags, &mut width)
 				};
-				folders.push((Some(st), file_list));
+				folders.push((Some(string_path), list));
 			}
 			path if path.exists() || path.is_symlink() => {
 				if let Some(mut f) = file::info(&path.to_path_buf(), &flags, &mut width) {
-					let bp = basepath(path);
-					f.name = format!("{WHITE}{}{}", bp, f.name);
-					f.len = format!("{}{}", bp, f.sname).chars().count() + GRID_GAP;
-					standalone.push(f)
+					let base = parent_path(path);
+					f.name = format!("{WHITE}{}{}", base, f.name);
+					f.len = format!("{}{}", base, f.sname).chars().count() + GRID_GAP;
+					file_list.push(f)
 				}
 			}
-			_ => println!("{RED}{st}{WHITE}: No such file or directory\n"),
+			_ => println!("{RED}{string_path}{WHITE}: No such file or directory\n"),
 		}
 	}
 
-	let sa_len = standalone.len();
-	if sa_len > 0 {
-		file_vec_print(None, standalone, &flags, &width)
+	let fl_len = file_list.len();
+	if fl_len > 0 {
+		file_vec_print(None, file_list, &flags, &width)
 	}
 
-	if folders.len() == 1 && sa_len == 0 {
-		folders[0].0 = None;
+	if folders.len() == 1 && fl_len == 0 {
+		folders[0].0 = None; // hide the title for a single folder
 	}
 
 	for (title, folder) in folders {
@@ -71,8 +71,8 @@ fn main() {
 }
 
 fn file_vec_print(title: Option<String>, mut file_list: Vec<File>, fl: &Flags, w: &Width) {
-	if let Some(pt) = title {
-		println!("\n{WHITE}{pt}:")
+	if let Some(title_string) = title {
+		println!("\n{WHITE}{title_string}:")
 	}
 
 	let fl_len = file_list.len();
@@ -91,7 +91,11 @@ fn file_vec_print(title: Option<String>, mut file_list: Vec<File>, fl: &Flags, w
 			file_list.sort_by_key(|f| (f.line.as_ref().unwrap().time));
 			return display::list::print(&file_list, fl, w);
 		}
-		file_list.sort_by_key(|f| (Reverse(f.dir), f.ext.clone(), f.sname.clone()));
+		if fl.name_sort {
+			file_list.sort_by_key(|f| (f.sname.clone()));
+		} else {
+			file_list.sort_by_key(|f| (Reverse(f.dir), f.ext.clone(), f.sname.clone()));
+		}
 	}
 
 	if fl.list_format {

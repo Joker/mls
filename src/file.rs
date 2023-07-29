@@ -57,9 +57,9 @@ fn grid_info(path: &PathBuf, sname: String) -> File {
 	let len = sname.chars().count() + GRID_GAP;
 
 	if lnk {
-		let nvalid;
-		(_, _, _, dir, nvalid) = link::info(path);
-		if nvalid {
+		let error;
+		(_, _, _, dir, error) = link::info(path);
+		if error {
 			name = format!("{RED}{sname}");
 		}
 	}
