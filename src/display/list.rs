@@ -2,7 +2,7 @@ use std::ptr::eq;
 
 use crate::{
 	args::Flags,
-	color::WHITE,
+	color::{RESET, WHITE},
 	ext::xattr::Attribute,
 	file::{size::size_fmt, time::date_time_fmt, time::TIMEZONE, File},
 	Width,
@@ -66,7 +66,7 @@ fn line_fmt(f: &File, fl: &Flags, w: &Width) -> String {
 
 pub fn print(files: &[File], fl: &Flags, w: &Width) {
 	println!(
-		"{}",
+		"{}{RESET}",
 		files
 			.iter()
 			.map(|f| line_fmt(f, fl, w))

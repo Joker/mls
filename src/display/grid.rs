@@ -1,6 +1,6 @@
 use std::usize;
 
-use crate::{ext::unlibc::terminal_size, File};
+use crate::{color::RESET, ext::unlibc::terminal_size, File};
 
 use super::GRID_GAP;
 
@@ -64,7 +64,7 @@ pub fn print(files: &Vec<File>) {
 
 	if stack == 1 {
 		return println!(
-			"{}",
+			"{}{RESET}",
 			files
 				.iter()
 				.map(|x| x.name.as_str())
@@ -87,7 +87,7 @@ pub fn print(files: &Vec<File>) {
 		}
 	}
 
-	println!("{}", str_vec.join("\n"))
+	println!("{}{RESET}", str_vec.join("\n"))
 }
 
 fn spaces(width: usize) -> String {

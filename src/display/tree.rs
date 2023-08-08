@@ -2,7 +2,7 @@ use std::{cmp::Reverse, path::Path};
 
 use crate::{
 	args::Flags,
-	color::WHITE,
+	color::{RESET, WHITE},
 	file::{
 		self,
 		name::{filename, parent_path},
@@ -72,7 +72,7 @@ pub fn list(path: &Path, fl: &Flags, w: &mut Width, lvl: usize, trunk: String) -
 
 pub fn print(files: &[File]) {
 	println!(
-		"{}",
+		"{}{RESET}",
 		files.iter().map(|f| f.name.clone()).collect::<Vec<_>>().join("\n")
 	)
 }

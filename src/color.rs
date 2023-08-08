@@ -1,3 +1,5 @@
+pub static RESET: &str = "\x1b[0m";
+
 // pub static BLACK: &str = "\x1b[0;30m";
 pub static RED: &str = "\x1b[0;31m";
 pub static GREEN: &str = "\x1b[0;32m";
