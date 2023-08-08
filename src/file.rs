@@ -10,7 +10,7 @@ use std::path::{Path, PathBuf};
 
 use crate::{
 	args::Flags,
-	color::{RED, WHITE},
+	color::{MAGENTA, RED, WHITE},
 	display::GRID_GAP,
 	ext::unlibc::username_group,
 	ext::xattr::{Attribute, FileAttributes},
@@ -41,6 +41,7 @@ pub struct FileLine {
 	pub size_suf: String,
 	pub user: String,
 	pub group: String,
+	pub inode: String,
 	pub perm: String,
 	pub lnk: bool,
 	pub xattr: Option<Vec<Attribute>>,
@@ -115,6 +116,14 @@ fn list_info(path: &PathBuf, sname: String, wh: &mut Width, fl: &Flags) -> File 
 		wh.gid = group.len()
 	}
 
+	let mut inode = String::new();
+	if fl.inode {
+		inode = format!("{MAGENTA}{}  ", md.ino());
+		if wh.inode < inode.len() {
+			wh.inode = inode.len()
+		}
+	}
+
 	if lnk {
 		let fname;
 		(fname, dir) = link::ref_fmt(path, fl.full);
@@ -145,6 +154,7 @@ fn list_info(path: &PathBuf, sname: String, wh: &mut Width, fl: &Flags) -> File 
 			group,
 			perm: permissions_fmt(rwx, md.nlink(), fl),
 			lnk,
+			inode,
 			xattr,
 		})),
 	}

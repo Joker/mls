@@ -9,6 +9,7 @@ pub struct Flags {
 	pub time_sort: bool,
 	pub name_sort: bool,
 	pub full: bool,
+	pub follow: bool,
 	pub bytes: bool,
 	pub ctime: bool,
 	pub access: bool,
@@ -16,6 +17,7 @@ pub struct Flags {
 	pub dir_only: bool,
 	pub group: bool,
 	pub octal: bool,
+	pub inode: bool,
 	pub xattr: bool,
 	pub lvl: usize,
 	pub list_format: bool,
@@ -30,27 +32,23 @@ pub fn args_init() -> (Flags, Vec<String>) {
 		.flag_with("1", "List files one entry per line.")
 		.flag_with("C", "List files in the multi-column format. (default)")
 		.flag_with("l", "List files in the long format.")
-		.flag_with("S", "Sort by size. \t\t\t\t\t\t(long format)")
-		.flag_with("t", "Sort by time. \t\t\t\t\t\t(long format)")
-		.flag_with("N", "Sort by name. \t\t\t\t\t\t(all formats)")
-		.flag_with("u", "Use time of last access. \t\t\t\t(long format)")
-		.flag_with("U", "Use time when file was created. \t\t\t(long format)")
-		.flag_with("c", "Use time when file status was last changed. \t\t(long format)")
-		.flag_with("g", "Display file group name. \t\t\t\t(long format)")
-		.flag_with("b h", "Display file sizes in bytes. \t\t\t\t(long format)")
-		.flag_with("@", "Display file extended attributes. \t\t\t(long format)")
-		.flag_with("O", "Display file permission in octal format. \t\t(long format)")
-		.flag_with("f", "Display absolute path for symbolic link. \t\t(long format)")
-		.flag_with("L", "(long format)")
-		.flag_with("i", "Display file serial number <inode>. \t\t\t(long format)")
+		.flag_with("S", "Sort by size. \t\t\t\t\t\t\t(long format)")
+		.flag_with("t", "Sort by time. \t\t\t\t\t\t\t(long format)")
+		.flag_with("N", "Sort by name. \t\t\t\t\t\t\t(all formats)")
+		.flag_with("u", "Use time of last access. \t\t\t\t\t(long format)")
+		.flag_with("U", "Use time when file was created. \t\t\t\t(long format)")
+		.flag_with("c", "Use time when file status was last changed. \t\t\t(long format)")
+		.flag_with("g", "Display file group name. \t\t\t\t\t(long format)")
+		.flag_with("b h", "Display file sizes in bytes. \t\t\t\t\t(long format)")
+		.flag_with("i", "Display file serial number <inode>. \t\t\t\t(long format)")
+		.flag_with("O", "Display file permission in octal format. \t\t\t(long format)")
+		.flag_with("@", "Display file extended attributes. \t\t\t\t(long format)")
+		.flag_with("L", "Display file information pointed by the symbolic link. \t(long format)")
+		.flag_with("f", "Display absolute path for symbolic link. \t\t\t(long format)")
 		.flag_with("help", "Display list of command-line options.")
 		.flag_with("2", "Recurse into directories as a tree. Limit the depth 2.")
 		.flag_with("3", "Recurse into directories as a tree. Limit the depth 3.")
-		.option_with(
-			"T",
-			"9",
-			"Recurse into directories as a tree. DEPTH - limit the depth of recursion.",
-		);
+		.option_with("T", "9", "Recurse into directories as a tree. DEPTH - limit the depth of recursion.");
 
 	if let Err(err) = parser.parse() {
 		err.exit();
@@ -76,12 +74,14 @@ pub fn args_init() -> (Flags, Vec<String>) {
 		time_sort: parser.found("t"),
 		name_sort: parser.found("N"),
 		full: parser.found("f"),
+		follow: parser.found("L"),
 		bytes: parser.found("b"),
 		ctime: parser.found("c"),
 		access: parser.found("u"),
 		create: parser.found("U"),
 		dir_only: parser.found("d"),
 		group: parser.found("g"),
+		inode: parser.found("i"),
 		xattr: parser.found("@"),
 		octal: parser.found("O"),
 		lvl,
@@ -111,12 +111,13 @@ pub fn args_init() -> (Flags, Vec<String>) {
 		fl.long
 			|| fl.size_sort
 			|| fl.time_sort
-			|| fl.group || fl.xattr
-			|| fl.bytes || fl.octal
-			|| fl.full || fl.ctime
-			|| fl.access || fl.create;
+			|| fl.inode || fl.group
+			|| fl.xattr || fl.bytes
+			|| fl.octal || fl.follow
+			|| fl.ctime || fl.access
+			|| fl.create || fl.full;
 
-	if parser.found("C") || parser.found("1")  {
+	if parser.found("C") || parser.found("1") {
 		fl.list_format = false;
 		fl.size_sort = false;
 		fl.time_sort = false;

@@ -16,6 +16,7 @@ pub struct Width {
 	pub uid: usize,
 	pub gid: usize,
 	pub szn: usize,
+	pub inode: usize,
 	pub xattr: bool,
 }
 
@@ -28,6 +29,7 @@ fn main() {
 		uid: 0,
 		gid: 0,
 		szn: 0,
+		inode: 0,
 		xattr: false,
 	};
 

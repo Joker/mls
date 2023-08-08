@@ -47,7 +47,8 @@ fn line_fmt(f: &File, fl: &Flags, w: &Width) -> String {
 			let (xsign, xattr) = xattr_fmt(w.xattr, &l.xattr, fl.xattr && !fl.tree_format, x_width);
 
 			format!(
-				"{}{WHITE}{}{: >ncu$}{: >ncg$}  {}  {}  {}{}",
+				"{: >ind$}{}{WHITE}{}{: >ncu$}{: >ncg$}  {}  {}  {}{}",
+				l.inode,
 				l.perm,
 				xsign,
 				l.user,
@@ -56,6 +57,7 @@ fn line_fmt(f: &File, fl: &Flags, w: &Width) -> String {
 				size_fmt(f, w, fl.bytes),
 				f.name,
 				xattr,
+				ind = w.inode,
 				ncu = usr_width,
 				ncg = grp_width,
 			)
