@@ -9,7 +9,7 @@ use std::fmt;
 #[derive(Debug)]
 struct Opt {
 	values: Vec<String>,
-	default: String,
+	default: Option<String>,
 	desc: (String, Option<String>),
 }
 
@@ -67,14 +67,18 @@ impl ArgParser {
 			};
 		});
 		self.options.iter().for_each(|f| {
-			match f.desc.1.as_ref() {
-				Some(str) => println!(
-					"  {0}={1}\n         {2} (default: {1})",
+			let desc_str = match f.desc.1.as_ref() {
+				Some(str) => format!("{} ", str),
+				_ => String::new(),
+			};
+			match f.default.as_ref() {
+				Some(default) => println!(
+					"  {0}={1}\n         {2}(default: {1})",
 					dash(f.desc.0.as_str()),
-					f.default,
-					str
+					default,
+					desc_str
 				),
-				_ => println!("  {0}={1}\n         default: {1}", dash(f.desc.0.as_str()), f.default),
+				_ => println!("  {}=X\n         {}(X: required)", dash(f.desc.0.as_str()), desc_str),
 			};
 		});
 		std::process::exit(0);
@@ -91,10 +95,12 @@ impl ArgParser {
 
 	/// Registers a new option with description.
 	pub fn option_with(mut self, name: &str, default: &str, description: &str) -> Self {
+		let default = if default.is_empty() { None } else { Some(String::from(default)) };
+		let desc = if description.is_empty() { None } else { Some(String::from(description)) };
 		self.options.push(Opt {
 			values: Vec::new(),
-			default: String::from(default),
-			desc: (name.into(), Some(description.into())),
+			default,
+			desc: (name.into(), desc),
 		});
 		let index = self.options.len() - 1;
 		for alias in name.split_whitespace() {
@@ -105,9 +111,10 @@ impl ArgParser {
 
 	/// Registers a new flag with description.
 	pub fn flag_with(mut self, name: &str, description: &str) -> Self {
+		let desc = if description.is_empty() { None } else { Some(description.into()) };
 		self.flags.push(Flag {
 			count: 0,
-			desc: (name.into(), Some(description.into())),
+			desc: (name.into(), desc),
 		});
 		let index = self.flags.len() - 1;
 		for alias in name.split_whitespace() {
@@ -122,7 +129,10 @@ impl ArgParser {
 			if let Some(value) = self.options[*index].values.last() {
 				return value.to_string();
 			}
-			return self.options[*index].default.clone();
+			return match self.options[*index].default.clone() {
+				Some(default) => default,
+				_ => String::new(),
+			};
 		}
 		panic!("'{}' is not a registered option name", name);
 	}
@@ -210,6 +220,11 @@ impl ArgParser {
 
 			if let Some(index) = self.option_map.get(&c.to_string()) {
 				if !argstream.has_next() {
+					if let Some(default) = self.options[*index].default.clone() {
+						self.options[*index].values.push(default);
+						continue;
+					}
+
 					return Err(Error::MissingValue(match arg.chars().count() > 2 {
 						true => format!("missing value for '{}' in {}", c, arg),
 						false => format!("missing value for {}", arg),
@@ -235,6 +250,11 @@ impl ArgParser {
 
 		if let Some(index) = self.option_map.get(name.trim_start_matches('-')) {
 			if value.is_empty() {
+				if let Some(default) = self.options[*index].default.clone() {
+					self.options[*index].values.push(default);
+					return Ok(());
+				}
+
 				return Err(Error::MissingValue(format!("missing value for {name}")));
 			}
 
