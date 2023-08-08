@@ -7,7 +7,7 @@ mod file;
 use std::{cmp::Reverse, path::Path};
 
 use args::{args_init, Flags};
-use color::{BLUE_L, RED, WHITE};
+use color::{BLUE_L, RED, RESET, WHITE};
 use display::{tree, GRID_GAP};
 use file::{name::parent_path, File};
 
@@ -98,6 +98,16 @@ fn file_vec_print(title: Option<String>, mut file_list: Vec<File>, fl: &Flags, w
 		}
 	}
 
+	if fl.one {
+		return println!(
+			"{}{RESET}",
+			&file_list
+				.iter()
+				.map(|x| x.name.as_str())
+				.collect::<Vec<_>>()
+				.join("\n")
+		);
+	}
 	if fl.list_format {
 		return display::list::print(&file_list, fl, w);
 	}

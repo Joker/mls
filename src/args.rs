@@ -1,10 +1,9 @@
 use crate::ext::flarg::ArgParser;
 
-pub const TREE_LEVEL: usize = 2;
-
 #[derive(Debug, Clone)]
 pub struct Flags {
 	pub all: bool,
+	pub one: bool,
 	pub long: bool,
 	pub size_sort: bool,
 	pub time_sort: bool,
@@ -28,6 +27,7 @@ pub fn args_init() -> (Flags, Vec<String>) {
 		.helptext("USAGE:\n\tmls [options] [--] [file ...]\nOPTIONS:")
 		.flag_with("a", "Include directory entries whose names begin with a dot (`.`).")
 		.flag_with("d", "List of directories only.")
+		.flag_with("1", "List files one entry per line.")
 		.flag_with("C", "List files in the multi-column format. (default)")
 		.flag_with("l", "List files in the long format.")
 		.flag_with("S", "Sort by size. \t\t\t\t\t\t(long format)")
@@ -41,13 +41,14 @@ pub fn args_init() -> (Flags, Vec<String>) {
 		.flag_with("@", "Display file extended attributes. \t\t\t(long format)")
 		.flag_with("O", "Display file permission in octal format. \t\t(long format)")
 		.flag_with("f", "Display absolute path for symbolic link. \t\t(long format)")
+		.flag_with("L", "(long format)")
+		.flag_with("i", "Display file serial number <inode>. \t\t\t(long format)")
 		.flag_with("help", "Display list of command-line options.")
-		.flag_with("T", "Recurse into directories as a tree.")
 		.flag_with("2", "Recurse into directories as a tree. Limit the depth 2.")
 		.flag_with("3", "Recurse into directories as a tree. Limit the depth 3.")
 		.option_with(
-			"L",
-			TREE_LEVEL.to_string().as_str(),
+			"T",
+			"9",
 			"Recurse into directories as a tree. DEPTH - limit the depth of recursion.",
 		);
 
@@ -58,26 +59,18 @@ pub fn args_init() -> (Flags, Vec<String>) {
 		parser.print_help();
 	}
 
-	let tree = (
-		parser.found("2"),
-		parser.found("3"),
-		parser.found("L"),
-		parser.found("T"),
-	);
+	let tree = (parser.found("2"), parser.found("3"), parser.found("T"));
 	let lvl = if tree.0 {
 		2
 	} else if tree.1 {
 		3
-	} else if tree.2 {
-		parser.value("L").parse::<usize>().unwrap_or(TREE_LEVEL)
-	} else if tree.3 {
-		999
 	} else {
-		TREE_LEVEL
+		parser.value("T").parse::<usize>().unwrap_or(9)
 	};
 
 	let mut fl = Flags {
 		all: parser.found("a"),
+		one: parser.found("1"),
 		long: parser.found("l"),
 		size_sort: parser.found("S"),
 		time_sort: parser.found("t"),
@@ -93,7 +86,7 @@ pub fn args_init() -> (Flags, Vec<String>) {
 		octal: parser.found("O"),
 		lvl,
 		list_format: false,
-		tree_format: tree.0 || tree.1 || tree.2 || tree.3,
+		tree_format: tree.0 || tree.1 || tree.2,
 	};
 	match &parser.app_path {
 		Some(p) => match p.rsplit('/').next().unwrap_or("") {
@@ -123,7 +116,7 @@ pub fn args_init() -> (Flags, Vec<String>) {
 			|| fl.full || fl.ctime
 			|| fl.access || fl.create;
 
-	if parser.found("C") {
+	if parser.found("C") || parser.found("1")  {
 		fl.list_format = false;
 		fl.size_sort = false;
 		fl.time_sort = false;
