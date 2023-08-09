@@ -36,7 +36,7 @@ pub fn ref_fmt(pb: &PathBuf, abs: bool) -> (String, bool) {
 	let (path, pb_path, exe, dir, error) = info(pb);
 
 	if error {
-		return (format!("{RED} -> {}", pb.to_string_lossy()), false);
+		return (format!("{RED} -> {}", path.to_string_lossy()), false);
 	}
 
 	let (ext, egrp) = ext_group(ext(&path));

@@ -79,7 +79,7 @@ fn file_vec_print(title: Option<String>, mut file_list: Vec<File>, fl: &Flags, w
 
 	let fl_len = file_list.len();
 	match fl_len {
-		0 if !fl.list_format && !fl.tree_format => return println!("{BLUE_L}.   .."),
+		0 if !fl.list_format && !fl.tree_format => return println!("{BLUE_L}.   ..{RESET}"),
 		0 => return,
 		_ => (),
 	}

@@ -75,8 +75,14 @@ fn grid_info(path: &PathBuf, sname: String) -> File {
 }
 
 fn list_info(path: &PathBuf, sname: String, wh: &mut Width, fl: &Flags) -> File {
-	let md = std::fs::symlink_metadata(path).unwrap();
-
+	let md = if fl.follow {
+		match std::fs::metadata(path) {
+			Ok(mdata) => mdata,
+			_ => std::fs::symlink_metadata(path).unwrap(),
+		}
+	} else {
+		std::fs::symlink_metadata(path).unwrap()
+	};
 	let mut dir = md.is_dir();
 	let lnk = md.is_symlink();
 	let rwx = md.permissions().mode();
