@@ -25,7 +25,7 @@ pub fn ext(path: &Path) -> String {
 pub fn ext_group(ext: String) -> (String, u8) {
 	match ext.as_str() {
 		"png" | "jpg" | "jpeg" | "gif" | "svg" | "webp" | "ico" | "bmp" | "tiff" | "fig" | "psd"
-		| "sketch" => (format!("1_{ext}"), 1),
+		| "sketch" => (format!("1a_{ext}"), 1),
 
 		"7z" | "zip" | "xz" | "gz" | "rar" | "bz2" | "tar" | "tgz" | "tbz" | "txz" => (format!("2_{ext}"), 2),
 
@@ -39,9 +39,9 @@ pub fn ext_group(ext: String) -> (String, u8) {
 			(format!("4b_{ext}"), 4)
 		}
 		"avi" | "flv" | "mkv" | "mov" | "mp4" | "mpeg" | "mpg" | "vob" | "wmv" | "webm" => {
-			(format!("5a_{ext}"), 5)
+			(format!("1b_{ext}"), 5)
 		}
-		"aac" | "mp3" | "ogg" | "opus" | "wma" | "flac" | "wav" => (format!("5b_{ext}"), 6),
+		"aac" | "mp3" | "ogg" | "opus" | "wma" | "flac" | "wav" => (format!("1c_{ext}"), 6),
 
 		"tmp" | "swp" | "swo" | "swn" | "bak" | "bkp" | "bk" | "parts" | "lock" => (format!("zzz_{ext}"), 9),
 		_ => (ext, 0),

@@ -52,8 +52,9 @@ fn grid_info(path: &PathBuf, sname: String) -> File {
 
 	let lnk = md.is_symlink();
 	let exe = md.permissions().mode() & USER_EXE == USER_EXE;
-	let (ext, egrp) = ext_group(ext(path));
+	// let (ext, egrp) = ext_group(ext(path));
 	let mut dir = md.is_dir();
+	let (ext, egrp) = if dir { (String::new(), 0) } else { ext_group(ext(path)) };
 	let mut name = filename_fmt(&sname, &ext, egrp, dir, exe, lnk);
 	let len = sname.chars().count() + GRID_GAP;
 
@@ -87,7 +88,8 @@ fn list_info(path: &PathBuf, sname: String, wh: &mut Width, fl: &Flags) -> File 
 	let lnk = md.is_symlink();
 	let rwx = md.permissions().mode();
 	let exe = rwx & USER_EXE == USER_EXE;
-	let (ext, egrp) = ext_group(ext(path));
+	// let (ext, egrp) = ext_group(ext(path));
+	let (ext, egrp) = if dir { (String::new(), 0) } else { ext_group(ext(path)) };
 	let mut name = filename_fmt(&sname, &ext, egrp, dir, exe, lnk);
 
 	let size = match dir && !lnk {
