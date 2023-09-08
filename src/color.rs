@@ -1,31 +1,23 @@
 pub static RESET: &str = "\x1b[0m";
+pub static UNDERLINE: &str = "\x1b[4m";
 
-// pub static BLACK: &str = "\x1b[0;30m";
-pub static RED: &str = "\x1b[0;31m";
-pub static GREEN: &str = "\x1b[0;32m";
-pub static YELLOW: &str = "\x1b[0;33m";
-// pub static BLUE: &str = "\x1b[0;34m";
-pub static MAGENTA: &str = "\x1b[0;35m";
-pub static CYAN: &str = "\x1b[0;36m";
-pub static WHITE: &str = "\x1b[0;37m";
+// pub static BLACK: &str = "\x1b[38;5;0m";
+pub static RED: &str = "\x1b[38;5;1m";
+pub static GREEN: &str = "\x1b[38;5;2m";
+pub static YELLOW: &str = "\x1b[38;5;3m";
+// pub static BLUE: &str = "\x1b[38;5;4m";
+pub static MAGENTA: &str = "\x1b[38;5;5m";
+pub static CYAN: &str = "\x1b[38;5;6m";
+pub static WHITE: &str = "\x1b[38;5;7m";
 
-pub static BLACK_H: &str = "\x1b[1;30m";
-// pub static RED_H: &str = "\x1b[1;31m";
-pub static GREEN_H: &str = "\x1b[1;32m";
-// pub static YELLOW_H: &str = "\x1b[1;33m";
-// pub static BLUE_H: &str = "\x1b[1;34m";
-pub static MAGENTA_H: &str = "\x1b[1;35m";
-// pub static CYAN_H: &str = "\x1b[1;36m";
-// pub static WHITE_H: &str = "\x1b[1;37m";
-
-pub static BLACK_L: &str = "\x1b[0;90m";
-pub static RED_L: &str = "\x1b[0;91m";
-pub static GREEN_L: &str = "\x1b[0;92m";
-// pub static YELLOW_L: &str = "\x1b[0;93m";
-pub static BLUE_L: &str = "\x1b[0;94m";
-// pub static MAGENTA_L: &str = "\x1b[0;95m";
-// pub static CYAN_L: &str = "\x1b[0;96m";
-// pub static WHITE_L: &str = "\x1b[0;97m";
+pub static BLACK_H: &str = "\x1b[38;5;8m";
+pub static RED_H: &str = "\x1b[38;5;9m";
+pub static GREEN_H: &str = "\x1b[38;5;10m";
+// pub static YELLOW_H: &str = "\x1b[38;5;11m";
+pub static BLUE_H: &str = "\x1b[38;5;12m";
+pub static MAGENTA_H: &str = "\x1b[38;5;13m";
+// pub static CYAN_H: &str = "\x1b[38;5;14m";
+// pub static WHITE_H: &str = "\x1b[38;5;15m";
 
 pub static SUFFIX: &str = "\x1b[38;5;23m";
 pub static SIZE: &str = "\x1b[38;5;42m";

@@ -48,7 +48,7 @@ pub fn args_init() -> (Flags, Vec<String>) {
 		.flag_with("help", "Display list of command-line options.")
 		.flag_with("2", "Recurse into directories as a tree. Limit the depth 2.")
 		.flag_with("3", "Recurse into directories as a tree. Limit the depth 3.")
-		.option_with("T level", "9", "Recurse into directories as a tree. DEPTH - limit the depth of recursion.");
+		.option_with("level T", "9", "Recurse into directories as a tree. DEPTH - limit the depth of recursion.");
 
 	if let Err(err) = parser.parse() {
 		err.exit();

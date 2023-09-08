@@ -1,5 +1,5 @@
 use crate::{
-	color::{BLACK_H, BLACK_L, GREEN, SIZE, SUFFIX, WHITE},
+	color::{BLACK_H, GREEN, SIZE, SUFFIX, WHITE},
 	Width,
 };
 
@@ -11,7 +11,7 @@ pub fn size_fmt(f: &File, w: &Width, bitsize: bool) -> String {
 		return format!("{BLACK_H}{: >nsz$}", "-", nsz = w.szn);
 	}
 	if f.dir {
-		return format!("{WHITE}{: >nsz$}{BLACK_L}f", line.size, nsz = w.szn - 1);
+		return format!("{WHITE}{: >nsz$}{BLACK_H}f", line.size, nsz = w.szn - 1);
 	}
 	if bitsize {
 		return format!("{WHITE}{: >nsz$}", line.size, nsz = w.szn);
@@ -40,7 +40,7 @@ pub fn size_to_string(bytes: u64) -> (String, String) {
 		bt if bt >= 1024 => (short_size(bt as f64), "k".to_string()),
 		bt if bt >= 1 => (bt.to_string(), String::new()),
 		_ => ("0".to_string(), String::new()),
-		// _ => format!("{GREEN_L}{}0{GREEN}", spaces(FSIZE_WIDTH - 1)),
+		// _ => format!("{GREEN_H}{}0{GREEN}", spaces(FSIZE_WIDTH - 1)),
 	}
 }
 

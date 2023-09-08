@@ -10,7 +10,7 @@ use std::path::{Path, PathBuf};
 
 use crate::{
 	args::Flags,
-	color::{MAGENTA, RED, WHITE},
+	color::{MAGENTA, RED, RESET, UNDERLINE, WHITE},
 	display::GRID_GAP,
 	ext::unlibc::username_group,
 	ext::xattr::{Attribute, FileAttributes},
@@ -18,7 +18,7 @@ use crate::{
 };
 
 use self::{
-	mode::{permissions_fmt, USER_EXE},
+	mode::{permissions_fmt, underline, USER_EXE},
 	name::{ext, ext_group, filename, filename_fmt},
 	size::size_to_string,
 };
@@ -51,7 +51,8 @@ fn grid_info(path: &PathBuf, sname: String) -> File {
 	let md = std::fs::symlink_metadata(path).unwrap();
 
 	let lnk = md.is_symlink();
-	let exe = md.permissions().mode() & USER_EXE == USER_EXE;
+	let rwx = md.permissions().mode();
+	let exe = rwx & USER_EXE == USER_EXE;
 	// let (ext, egrp) = ext_group(ext(path));
 	let mut dir = md.is_dir();
 	let (ext, egrp) = if dir { (String::new(), 0) } else { ext_group(ext(path)) };
@@ -64,6 +65,9 @@ fn grid_info(path: &PathBuf, sname: String) -> File {
 		if error {
 			name = format!("{RED}{sname}");
 		}
+	}
+	if underline(rwx) {
+		name = format!("{UNDERLINE}{name}{RESET}");
 	}
 	File {
 		sname,
@@ -136,6 +140,9 @@ fn list_info(path: &PathBuf, sname: String, wh: &mut Width, fl: &Flags) -> File 
 		let fname;
 		(fname, dir) = link::ref_fmt(path, fl.full);
 		name.push_str(&fname);
+	}
+	if underline(rwx) {
+		name = format!("{UNDERLINE}{name}{RESET}");
 	}
 	let len = sname.chars().count() + GRID_GAP;
 

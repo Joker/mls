@@ -1,7 +1,6 @@
-// use crate::color::{BLACK_H, BLUE_L, CYAN, GREEN, GREEN_L, MAGENTA, RED, RED_L, YELLOW, YELLOW_L};
 use crate::{
 	args::Flags,
-	color::{BLACK_H, BLUE_L, CYAN, GREEN, GREEN_H, GREEN_L, MAGENTA, MAGENTA_H, OCT, RED, RED_L, YELLOW},
+	color::{BLACK_H, BLUE_H, CYAN, GREEN, GREEN_H, MAGENTA, MAGENTA_H, OCT, RED, RED_H, YELLOW},
 };
 
 const BLOCK_DEV: u32 = 0o060000;
@@ -19,6 +18,22 @@ pub const USER_EXE: u32 = 0o000100; // S_IXUSR
 // const LNK:  u32 = 0o120000;
 // const SOCK: u32 = 0o140000;
 
+pub fn underline(rwx: u32) -> bool {
+	let has_bit = |bit| rwx & bit == bit;
+
+	if has_bit(BLOCK_DEV)
+		|| (has_bit(DIR) && has_bit(FILE)) // socket
+		|| (has_bit(CHAR_DEV) && !has_bit(FILE)) // char dev
+		|| has_bit(PIPE)
+		|| has_bit(STICKY_UID)
+		|| has_bit(STICKY_GID)
+		|| has_bit(STICKY_DIR)
+	{
+		return true;
+	}
+	return false;
+}
+
 fn kind(rwx: u32, nlink: u64) -> String {
 	let has_bit = |bit| rwx & bit == bit;
 
@@ -27,8 +42,8 @@ fn kind(rwx: u32, nlink: u64) -> String {
 	}
 	if has_bit(DIR) {
 		return match has_bit(FILE) {
-			true => format!("{RED_L}s"),
-			false => format!("{BLUE_L}d"),
+			true => format!("{RED_H}s"),
+			false => format!("{BLUE_H}d"),
 		};
 	}
 	if has_bit(CHAR_DEV) {
@@ -38,7 +53,7 @@ fn kind(rwx: u32, nlink: u64) -> String {
 		};
 	}
 	if has_bit(PIPE) {
-		return format!("{GREEN_L}│"); // p
+		return format!("{GREEN_H}│"); // p
 	}
 
 	match nlink {
@@ -51,10 +66,9 @@ fn kind(rwx: u32, nlink: u64) -> String {
 pub fn permissions_fmt(rwx: u32, nlink: u64, fl: &Flags) -> String {
 	let mut vp = [
 		kind(rwx, nlink),
-		// format!("{YELLOW_L}r"),
-		// format!("{YELLOW_L}r"),
-		// format!("{RED_L}w"),
-		// format!("{GREEN_L}x"),
+		// format!("{YELLOW_H}r"),
+		// format!("{RED_H}w"),
+		// format!("{GREEN_H}x"),
 		// format!("{YELLOW}r"),
 		// format!("{RED}w"),
 		// format!("{GREEN}x"),

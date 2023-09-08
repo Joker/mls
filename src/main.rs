@@ -7,7 +7,7 @@ mod file;
 use std::{cmp::Reverse, path::Path};
 
 use args::{args_init, Flags};
-use color::{BLUE_L, RED, RESET, WHITE};
+use color::{BLUE_H, RED, RESET, WHITE};
 use display::{tree, GRID_GAP};
 use file::{name::parent_path, File};
 
@@ -79,7 +79,7 @@ fn file_vec_print(title: Option<String>, mut file_list: Vec<File>, fl: &Flags, w
 
 	let fl_len = file_list.len();
 	match fl_len {
-		0 if !fl.list_format && !fl.tree_format => return println!("{BLUE_L}.   ..{RESET}"),
+		0 if !fl.list_format && !fl.tree_format => return println!("{BLUE_H}.   ..{RESET}"),
 		0 => return,
 		_ => (),
 	}

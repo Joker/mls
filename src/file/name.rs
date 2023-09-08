@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use crate::color::{AVI, BLUE_L, CFG, CYAN, DOC, GREEN_H, IMG, MP3, SRC, TMP, WHITE, ZIP};
+use crate::color::{AVI, BLUE_H, CFG, CYAN, DOC, GREEN_H, IMG, MP3, SRC, TMP, WHITE, ZIP};
 
 pub fn parent_path(path: &Path) -> String {
 	match path.parent() {
@@ -63,7 +63,7 @@ pub fn filename_fmt(name: &str, ext: &str, egrp: u8, dir: bool, exe: bool, lnk: 
 		return format!("{CYAN}{name}");
 	}
 	if dir {
-		return format!("{BLUE_L}{name}");
+		return format!("{BLUE_H}{name}");
 	}
 	if exe {
 		return format!("{GREEN_H}{name}");
