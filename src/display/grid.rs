@@ -4,13 +4,13 @@ use crate::{color::RESET, ext::unlibc::terminal_size, File};
 
 use super::GRID_GAP;
 
-fn columns_width(files: &Vec<File>, stack_size: usize) -> (usize, Vec<usize>) {
+fn columns_width(files: &Vec<File>, lines: usize) -> (usize, Vec<usize>) {
 	let mut col_sizes = Vec::new();
 	let mut count = 0;
 	let mut maximum = 0;
 
 	for f in files {
-		if count == stack_size {
+		if count == lines {
 			col_sizes.push(maximum);
 			maximum = 0;
 			count = 0;
@@ -28,41 +28,47 @@ fn columns_width(files: &Vec<File>, stack_size: usize) -> (usize, Vec<usize>) {
 fn grid_size(names: &Vec<File>) -> (usize, Vec<usize>) {
 	let (term_width, _) = terminal_size().unwrap();
 
-	let mut stack = names.len() / (term_width / names.iter().map(|f| f.len).max().unwrap_or(term_width / 2));
+	let mut lines = names.len() / (term_width / names.iter().map(|f| f.len).max().unwrap_or(term_width / 2));
 
-	if stack < 2 && names.iter().fold(0, |acc, e| acc + e.len) <= term_width {
+	if lines < 3 && names.iter().fold(0, |acc, fname| acc + fname.len) <= term_width {
 		return (1, Vec::new());
 	}
 
-	let (mut width, mut col_sizes) = columns_width(names, stack);
-	if term_width < width {
+	let (mut col_sum, mut column_vec) = columns_width(names, lines);
+	if term_width < col_sum {
 		loop {
-			stack += 1;
-			(width, col_sizes) = columns_width(names, stack);
-			if term_width >= width {
-				return (stack, col_sizes);
+			lines += 1;
+			(col_sum, column_vec) = columns_width(names, lines);
+			if term_width >= col_sum {
+				return (lines, column_vec);
 			}
-		}
-	} else {
-		let mut column_out = col_sizes;
-		loop {
-			stack -= 1;
-			(width, col_sizes) = columns_width(names, stack);
-			if term_width == width {
-				return (stack, col_sizes);
-			}
-			if term_width < width {
-				return (stack + 1, column_out);
-			}
-			column_out = col_sizes;
 		}
 	}
+	if term_width > col_sum && lines > 2 {
+		let mut column_bcup = column_vec;
+		loop {
+			lines -= 1;
+			if lines < 2 {
+				return (2, column_bcup);
+			}
+			(col_sum, column_vec) = columns_width(names, lines);
+
+			if term_width == col_sum {
+				return (lines, column_vec);
+			}
+			if term_width < col_sum {
+				return (lines + 1, column_bcup);
+			}
+			column_bcup = column_vec;
+		}
+	}
+	return (lines, column_vec);
 }
 
 pub fn print(files: &Vec<File>) {
-	let (stack, column_sizes) = grid_size(files);
+	let (lines, column_sizes) = grid_size(files);
 
-	if stack == 1 {
+	if lines == 1 {
 		return println!(
 			"{}{RESET}",
 			files
@@ -73,12 +79,12 @@ pub fn print(files: &Vec<File>) {
 		);
 	}
 
-	let mut str_vec: Vec<String> = Vec::with_capacity(stack);
-	str_vec.resize(stack, String::from(""));
+	let mut str_vec: Vec<String> = Vec::with_capacity(lines);
+	str_vec.resize(lines, String::from(""));
 
 	for (i, nm) in files.iter().enumerate() {
-		let row_num = i % stack;
-		let col_num = i / stack;
+		let row_num = i % lines;
+		let col_num = i / lines;
 
 		str_vec[row_num].push_str(&nm.name);
 

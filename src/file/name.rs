@@ -32,11 +32,15 @@ pub fn ext_group(ext: String) -> (String, u8) {
 		"djvu" | "doc" | "docx" | "dotx" | "odp" | "odt" | "pdf" | "ppt" | "pptx" | "rtf" | "xls"
 		| "xlsx" | "fb2" => (format!("3_{ext}"), 3),
 
-		"html" | "css" | "scss" | "sass" | "js" | "jsx" | "ts" | "tsx" | "go" | "rs" | "java" | "sql"
-		| "py" | "c" | "cpp" | "hs" | "dart" | "mjs" | "cjs" | "sh" => (format!("4a_{ext}"), 7),
+		"go" | "rs" | "sql" | "c" | "h" | "cpp" | "hpp" | "hs" | "dart" | "sh" | "rb" | "py" | "java" => {
+			(format!("4a_{ext}"), 7)
+		}
+		"html" | "css" | "scss" | "sass" | "js" | "jsx" | "ts" | "tsx" | "mjs" | "cjs" => {
+			(format!("4b_{ext}"), 7)
+		}
 
 		"json" | "txt" | "md" | "csv" | "yaml" | "toml" | "cfg" | "conf" | "ini" | "xml" | "reg" => {
-			(format!("4b_{ext}"), 4)
+			(format!("4c_{ext}"), 4)
 		}
 		"avi" | "flv" | "mkv" | "mov" | "mp4" | "mpeg" | "mpg" | "vob" | "wmv" | "webm" => {
 			(format!("1b_{ext}"), 5)
