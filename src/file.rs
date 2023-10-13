@@ -3,10 +3,13 @@ pub mod mode;
 pub mod name;
 pub mod size;
 pub mod time;
+pub mod attr;
 
 use std::fs;
 use std::os::unix::prelude::{MetadataExt, PermissionsExt};
 use std::path::{Path, PathBuf};
+
+use exacl::AclEntry;
 
 use crate::{
 	args::Flags,
@@ -18,6 +21,7 @@ use crate::{
 };
 
 use self::{
+	attr::AclAttributes,
 	mode::{permissions_fmt, underline, USER_EXE},
 	name::{ext, ext_group, filename, filename_fmt},
 	size::size_to_string,
@@ -44,6 +48,7 @@ pub struct FileLine {
 	pub inode: String,
 	pub perm: String,
 	pub lnk: bool,
+	pub acl: Option<Vec<AclEntry>>,
 	pub xattr: Option<Vec<Attribute>>,
 }
 
@@ -154,6 +159,14 @@ fn list_info(path: &PathBuf, sname: String, wh: &mut Width, fl: &Flags) -> File 
 		_ => None,
 	};
 
+	let acl = match path.access_lists() {
+		Ok(al) if !al.is_empty() => {
+			wh.xattr = true;
+			Some(al)
+		}
+		_ => None,
+	};
+
 	File {
 		sname,
 		name,
@@ -170,6 +183,7 @@ fn list_info(path: &PathBuf, sname: String, wh: &mut Width, fl: &Flags) -> File 
 			perm: permissions_fmt(rwx, md.nlink(), fl),
 			lnk,
 			inode,
+			acl,
 			xattr,
 		})),
 	}
