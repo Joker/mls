@@ -3,25 +3,29 @@ pub mod mode;
 pub mod name;
 pub mod size;
 pub mod time;
+
+#[cfg(feature = "xattr")]
 pub mod attr;
+#[cfg(feature = "xattr")]
+use self::attr::{ext_attr, Xattr};
+
+#[derive(Clone, Debug)]
+#[cfg(not(feature = "xattr"))]
+pub struct Xattr {}
 
 use std::fs;
 use std::os::unix::prelude::{MetadataExt, PermissionsExt};
 use std::path::{Path, PathBuf};
-
-use exacl::AclEntry;
 
 use crate::{
 	args::Flags,
 	color::{MAGENTA, RED, RESET, UNDERLINE, WHITE},
 	display::GRID_GAP,
 	ext::unlibc::username_group,
-	ext::xattr::{Attribute, FileAttributes},
 	Width,
 };
 
 use self::{
-	attr::AclAttributes,
 	mode::{permissions_fmt, underline, USER_EXE},
 	name::{ext, ext_group, filename, filename_fmt},
 	size::size_to_string,
@@ -48,8 +52,7 @@ pub struct FileLine {
 	pub inode: String,
 	pub perm: String,
 	pub lnk: bool,
-	pub acl: Option<Vec<AclEntry>>,
-	pub xattr: Option<Vec<Attribute>>,
+	pub attr: Option<Xattr>,
 }
 
 fn grid_info(path: &PathBuf, sname: String) -> File {
@@ -151,21 +154,14 @@ fn list_info(path: &PathBuf, sname: String, wh: &mut Width, fl: &Flags) -> File 
 	}
 	let len = sname.chars().count() + GRID_GAP;
 
-	let xattr = match path.attributes() {
-		Ok(xa) if !xa.is_empty() => {
-			wh.xattr = true;
-			Some(xa)
-		}
-		_ => None,
-	};
-
-	let acl = match path.access_lists() {
-		Ok(al) if !al.is_empty() => {
-			wh.xattr = true;
-			Some(al)
-		}
-		_ => None,
-	};
+	#[cfg(feature = "xattr")]
+	let attr = ext_attr(path);
+	#[cfg(feature = "xattr")]
+	if attr.is_some() {
+		wh.xattr = true;
+	}
+	#[cfg(not(feature = "xattr"))]
+	let attr = None;
 
 	File {
 		sname,
@@ -183,8 +179,7 @@ fn list_info(path: &PathBuf, sname: String, wh: &mut Width, fl: &Flags) -> File 
 			perm: permissions_fmt(rwx, md.nlink(), fl),
 			lnk,
 			inode,
-			acl,
-			xattr,
+			attr,
 		})),
 	}
 }

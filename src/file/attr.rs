@@ -1,55 +1,74 @@
-use std::{io, path::Path, ptr::eq};
 use exacl::AclEntry;
+use std::{path::PathBuf, ptr::eq};
 
 use crate::{
 	color::WHITE,
 	display::tree::{END, LEAF},
-	ext::xattr::Attribute,
+	ext::xattr::{Attribute, FileAttributes},
 };
 
-pub trait AclAttributes {
-	fn access_lists(&self) -> io::Result<Vec<AclEntry>>;
+#[derive(Clone, Debug)]
+pub struct Xattr {
+	pub xattr: Option<Vec<Attribute>>,
+	pub acl: Option<Vec<AclEntry>>,
 }
 
-#[cfg(any(target_os = "macos", target_os = "linux"))]
-impl AclAttributes for Path {
-	fn access_lists(&self) -> io::Result<Vec<AclEntry>> {
-		exacl::getfacl(self, None)
+pub fn ext_attr(path: &PathBuf) -> Option<Xattr> {
+	let xattr = match path.attributes() {
+		Ok(xa) if !xa.is_empty() => Some(xa),
+		_ => None,
+	};
+	let acl = match exacl::getfacl(path, None) {
+		Ok(al) if !al.is_empty() => Some(al),
+		_ => None,
+	};
+
+	if xattr.is_none() && acl.is_none() {
+		None
+	} else {
+		Some(Xattr { xattr, acl })
 	}
 }
 
-pub fn exattr_fmt<'a>(
-	lx: &'a Option<Vec<Attribute>>, la: &'a Option<Vec<AclEntry>>, wx: bool, detail: bool, width: usize,
-) -> (&'a str, String) {
-	if !wx {
+pub fn ext_attr_fmt<'a>(lists: &'a Option<Xattr>, exist: bool, detail: bool, width: usize) -> (&'a str, String) {
+	if !exist {
 		return ("", String::new());
 	}
-	match (lx, la) {
-		(Some(x), Some(a)) => {
+	match lists {
+		Some(Xattr {
+			xattr: Some(x),
+			acl: Some(a),
+		}) => {
 			if !detail {
 				return ("@", String::new());
 			}
-			let mut qwe = xattr(x, width);
-			qwe.extend(acl(a, width));
-			("@", qwe.join(""))
+			let mut ext = xattr_fmt(x, width);
+			ext.extend(acl_fmt(a, width));
+			("@", ext.join(""))
 		}
-		(Some(x), None) => {
+		Some(Xattr {
+			xattr: Some(x),
+			acl: None,
+		}) => {
 			if !detail {
 				return ("@", String::new());
 			}
-			("@", xattr(x, width).join(""))
+			("@", xattr_fmt(x, width).join(""))
 		}
-		(None, Some(a)) => {
+		Some(Xattr {
+			xattr: None,
+			acl: Some(a),
+		}) => {
 			if !detail {
 				return ("+", String::new());
 			}
-			("+", acl(a, width).join(""))
+			("+", acl_fmt(a, width).join(""))
 		}
 		_ => (" ", String::new()),
 	}
 }
 
-fn xattr(atrs: &Vec<Attribute>, width: usize) -> Vec<String> {
+fn xattr_fmt(atrs: &Vec<Attribute>, width: usize) -> Vec<String> {
 	let last = atrs.iter().last().unwrap();
 	atrs.iter()
 		.map(|a| {
@@ -63,7 +82,7 @@ fn xattr(atrs: &Vec<Attribute>, width: usize) -> Vec<String> {
 		.collect::<Vec<String>>()
 }
 
-fn acl(atrs: &Vec<AclEntry>, width: usize) -> Vec<String> {
+fn acl_fmt(atrs: &Vec<AclEntry>, width: usize) -> Vec<String> {
 	atrs.iter()
 		.map(|a| {
 			format!(

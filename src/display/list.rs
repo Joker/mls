@@ -2,7 +2,6 @@ use crate::{
 	args::Flags,
 	color::{RESET, WHITE},
 	file::{
-		attr::exattr_fmt,
 		size::size_fmt,
 		time::{date_time_fmt, TIMEZONE},
 		File,
@@ -10,14 +9,22 @@ use crate::{
 	Width,
 };
 
+#[cfg(feature = "xattr")]
+use crate::file::attr::ext_attr_fmt;
+
 fn line_fmt(f: &File, fl: &Flags, w: &Width) -> String {
 	match &f.line {
 		Some(l) => {
 			let usr_width = w.uid + 1;
 			let grp_width = if fl.group { w.gid + 1 } else { 0 };
-			let x_width = 32 + usr_width + grp_width + w.szn + if fl.octal { 8 } else { 0 };
 
-			let (attr, exattr) = exattr_fmt(&l.xattr, &l.acl, w.xattr, fl.xattr && !fl.tree_format, x_width);
+			#[cfg(feature = "xattr")]
+			let x_width = 32 + usr_width + grp_width + w.szn + if fl.octal { 8 } else { 0 };
+			#[cfg(feature = "xattr")]
+			let (attr, exattr) = ext_attr_fmt(&l.attr, w.xattr, fl.xattr && !fl.tree_format, x_width);
+
+			#[cfg(not(feature = "xattr"))]
+			let (attr, exattr) = ("", String::new());
 
 			format!(
 				"{: >ind$}{}{WHITE}{}{: >ncu$}{: >ncg$}  {}  {}  {}{}",
