@@ -15,6 +15,7 @@ pub struct Flags {
 	pub access: bool,
 	pub create: bool,
 	pub dir_only: bool,
+	pub dir_file: bool,
 	pub group: bool,
 	pub octal: bool,
 	pub inode: bool,
@@ -28,7 +29,8 @@ pub fn args_init() -> (Flags, Vec<String>) {
 	let mut parser = ArgParser::new()
 		.helptext("USAGE:\n\tmls [options] [--] [file ...]\nOPTIONS:")
 		.flag_with("a", "Include directory entries whose names begin with a dot (`.`).")
-		.flag_with("d", "List of directories only.")
+		.flag_with("D", "List of directories only.")
+		.flag_with("d", "List directories as regular files.")
 		.flag_with("1", "List files one entry per line.")
 		.flag_with("C", "List files in the multi-column format. (default)")
 		.flag_with("l", "List files in the long format.")
@@ -81,7 +83,8 @@ pub fn args_init() -> (Flags, Vec<String>) {
 		ctime: parser.found("c"),
 		access: parser.found("u"),
 		create: parser.found("U"),
-		dir_only: parser.found("d"),
+		dir_only: parser.found("D"),
+		dir_file: parser.found("d"),
 		group: parser.found("g"),
 		inode: parser.found("i"),
 		xattr: parser.found("@"),

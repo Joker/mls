@@ -26,7 +26,7 @@ fn columns_width(files: &Vec<File>, lines: usize) -> (usize, Vec<usize>) {
 }
 
 fn grid_size(names: &Vec<File>) -> (usize, Vec<usize>) {
-	let (term_width, _) = terminal_size().unwrap();
+	let (term_width, _) = terminal_size().unwrap_or((80,20));
 
 	let mut lines = names.len() / (term_width / names.iter().map(|f| f.len).max().unwrap_or(term_width / 2));
 
