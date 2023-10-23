@@ -1,6 +1,7 @@
 pub static RESET: &str = "\x1b[0m";
 pub static UNDERLINE: &str = "\x1b[4m";
 
+/*
 // pub static BLACK: &str = "\x1b[38;5;0m";
 pub static RED: &str = "\x1b[38;5;1m";
 pub static GREEN: &str = "\x1b[38;5;2m";
@@ -18,6 +19,20 @@ pub static BLUE_H: &str = "\x1b[38;5;12m";
 pub static MAGENTA_H: &str = "\x1b[38;5;13m";
 // pub static CYAN_H: &str = "\x1b[38;5;14m";
 // pub static WHITE_H: &str = "\x1b[38;5;15m";
+// */
+
+pub static RED: &str = "\x1b[38;2;201;27;0m";
+pub static GREEN: &str = "\x1b[38;2;0;194;0m";
+pub static YELLOW: &str = "\x1b[38;2;199;196;0m";
+pub static MAGENTA: &str = "\x1b[38;2;201;48;199m";
+pub static CYAN: &str = "\x1b[38;2;0;197;199m";
+pub static WHITE: &str = "\x1b[38;2;199;199;199m";
+
+pub static BLACK_H: &str = "\x1b[38;2;103;103;103m";
+pub static RED_H: &str = "\x1b[38;2;255;109;103m";
+pub static GREEN_H: &str = "\x1b[38;2;95;249;103m";
+pub static BLUE_H: &str = "\x1b[38;2;104;113;255m";
+pub static MAGENTA_H: &str = "\x1b[38;2;255;118;255m";
 
 pub static SUFFIX: &str = "\x1b[38;5;23m";
 pub static SIZE: &str = "\x1b[38;5;42m";
